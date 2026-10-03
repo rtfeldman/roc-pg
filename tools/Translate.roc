@@ -7,6 +7,7 @@
 ## as the C does not write through a pointer that is also stored elsewhere.
 ## The cases where it would are reported, not translated.
 import CParse
+import CleanLocals
 import Consts
 import Structs
 
@@ -34,6 +35,13 @@ Translate :: [].{
 	## A grammar action: the rule's number and length, and the C code.
 	action : Translate.Env, U64, U64, Str, CParse.Stmt -> Translate.Output
 	action = |env, rule, len, rule_text, body| translate_action(env, rule, len, rule_text, body)
+
+	## A body ready for interning. Extra parameters and their arguments are
+	## exclusively I64 literals, extracted only in explicitly Int contexts.
+	ActionTemplate : { params : List(Str), body : Str, args : List(Str), problems : List(Str) }
+
+	action_template : Translate.Env, U64, U64, Str, CParse.Stmt -> Translate.ActionTemplate
+	action_template = |env, rule, len, rule_text, body| translate_action_body(env, rule, len, rule_text, body, Bool.True)
 
 	## A helper function, under the signature the generator gave it.
 	function : Translate.Env, CParse.Func, Translate.Sig -> Translate.Output
@@ -100,10 +108,12 @@ roc_type = |t|
 	}
 
 ## The zero value of a type, which `palloc0` and `makeNode` fill in.
+## Keep null inline in action expressions: a shared Node constant makes
+## repeated compile-time parsing slower on the current compiler.
 zero : Translate.CType -> Str
 zero = |t|
 	match t {
-		NodePtr(_) => "Node.Null"
+		NodePtr(_) => "Null"
 		ListPtr => "[]"
 		CharPtr => "Err(Null)"
 		Int => "0.I64"
@@ -189,6 +199,8 @@ St : {
 	## and the condition under which it was, if any.
 	stores : List(Store),
 	result_type : Translate.CType,
+	parameterize : Bool,
+	literals : List({ name : Str, code : Str }),
 }
 
 problem : St, Str -> St
@@ -218,11 +230,41 @@ Code : { code : Str, type : Translate.CType }
 expr : St, CParse.Expr, Try(Translate.CType, [Any]) -> { st : St, out : Code }
 expr = |st, e, want| {
 	r = expr_raw(st, e, want)
-	match want {
+	converted = match want {
 		Ok(t) => { st: r.st, out: convert(r.out, t, e) }
 		Err(Any) => r
 	}
+	# Never guess a literal's type from its spelling. In particular a Num
+	# under Any, a bool conversion, a pointer cast or a structural stack
+	# index is not an I64 slot. Each occurrence gets its own parameter.
+	if st.parameterize and want == Ok(Int) and converted.out.type == Int {
+		constant = match e {
+			Num(text) => Consts.number(text).is_ok()
+			CharLit(_) => Bool.True
+			Ident(name) =>
+				# NodeTag constants use a string representation, not I64.
+				if name.starts_with("T_") or lookup(st, name).is_ok() Bool.False else match Consts.resolve(st.env.consts, name) {
+					Ok(Int(_)) => Bool.True
+					_ => Bool.False
+				}
+			_ => Bool.False
+		}
+		if constant {
+			named = fresh(converted.st, "literal_${converted.st.literals.len().to_str()}")
+			return {
+				st: { ..named.st, literals: named.st.literals.append({ name: named.roc, code: converted.out.code }) },
+				out: { code: named.roc, type: Int },
+			}
+		}
+	}
+	converted
 }
+
+## Alias metadata retains expression text without carrying translator state.
+## Keep its constants inline: allocating literal slots here would lose their
+## declarations and could capture an unrelated later slot with the same name.
+retained_expr : St, CParse.Expr, Try(Translate.CType, [Any]) -> Code
+retained_expr = |st, e, want| expr({ ..st, parameterize: Bool.False }, e, want).out
 
 ## A value converted between C types that share a representation or that
 ## C converts implicitly.
@@ -344,7 +386,7 @@ rhs : St, CParse.Expr, Str -> { st : St, out : Code }
 rhs = |st, k, member|
 	match rhs_number(st, k) {
 		Ok(n) => { st, out: { code: "$a${n.to_str()}", type: member_type(st, member) } }
-		Err(_) => { st: problem(st, "value index"), out: { code: "Node.Null", type: NodePtr("Node") } }
+		Err(_) => { st: problem(st, "value index"), out: { code: "Null", type: NodePtr("Node") } }
 	}
 
 ## `n` for bison's offset `k` of a rule of length `len`: `yyvsp[k]` is `$(k + len)`.
@@ -405,17 +447,17 @@ field_read = |st, target, name| {
 				# A member of A_Const's value union: the node it holds.
 				match union_member(name) {
 					Ok(member) => { st: r.st, out: { code: r.out.code, type: NodePtr(member) } }
-					Err(_) => { st: problem(r.st, "union member ${name}"), out: { code: "Node.Null", type: NodePtr("Node") } }
+					Err(_) => { st: problem(r.st, "union member ${name}"), out: { code: "Null", type: NodePtr("Node") } }
 				}
 			} else if type == "Node" {
-				{ st: problem(r.st, "field ${name} of an untyped node"), out: { code: "Node.Null", type: NodePtr("Node") } }
+				{ st: problem(r.st, "field ${name} of an untyped node"), out: { code: "Null", type: NodePtr("Node") } }
 			} else {
 				match field_type(r.st, type, name) {
 					Ok(ft) => { st: r.st, out: { code: "${accessor(type)}(${r.out.code}).${field_name(name)}", type: ft } }
-					Err(_) => { st: problem(r.st, "no field ${name} in ${type}"), out: { code: "Node.Null", type: NodePtr("Node") } }
+					Err(_) => { st: problem(r.st, "no field ${name} in ${type}"), out: { code: "Null", type: NodePtr("Node") } }
 				}
 			}
-		_ => { st: problem(r.st, "field ${name} of a non-node"), out: { code: "Node.Null", type: NodePtr("Node") } }
+		_ => { st: problem(r.st, "field ${name} of a non-node"), out: { code: "Null", type: NodePtr("Node") } }
 	}
 }
 
@@ -558,8 +600,8 @@ call = |st, name, args, want| {
 		{ st: r.st, out: { code: r.out.code, type: NodePtr(type_arg(arg0)) } }
 	} else if name == "lfirst" {
 		match cell_of(st, arg0) {
-			Ok(lp) => { st, out: { code: "(${lp.list}.get(${lp.index}) ?? Node.Null)", type: NodePtr("Node") } }
-			Err(_) => { st: problem(st, "lfirst of an unknown cell"), out: { code: "Node.Null", type: NodePtr("Node") } }
+			Ok(lp) => { st, out: { code: "(${lp.list}.get(${lp.index}) ?? Null)", type: NodePtr("Node") } }
+			Err(_) => { st: problem(st, "lfirst of an unknown cell"), out: { code: "Null", type: NodePtr("Node") } }
 		}
 	} else if name == "lnext" {
 		match cell_of(st, arg1) {
@@ -597,7 +639,7 @@ call = |st, name, args, want| {
 		st_pub = if name == "lappend" or name == "lcons" or name.starts_with("list_make") args.fold(st, |acc, a| publish_arg(acc, a)) else st
 		match st.env.sigs.get(name) {
 			Ok(sig) => call_sig(st_pub, sig, args)
-			Err(_) => { st: problem(st, "unknown function ${name}"), out: { code: "Node.Null", type: NodePtr("Node") } }
+			Err(_) => { st: problem(st, "unknown function ${name}"), out: { code: "Null", type: NodePtr("Node") } }
 		}
 	}
 }
@@ -767,6 +809,94 @@ Lines : List(Str)
 indent : Lines -> Lines
 indent = |lines| lines.map(|l| "\t${l}")
 
+## Fuse only uninterrupted, independent writes. The ordinary lowering remains
+## authoritative for alias propagation and diagnostics; any writeback is a
+## barrier. Calls, field reads and control flow are deliberately not moved.
+Batch : { st : St, lines : Lines, count : U64 }
+
+batch : St, List(CParse.Stmt) -> Batch
+batch = |st, items| {
+	first = items.first() ?? Empty
+	initial = stmt(st, first)
+	seed =
+		match first {
+			Decl(type_text, [{ name, init: Ok(Call(Ident("makeNode"), [Ident(type)])) }]) =>
+				if ctype_of(type_text) == NodePtr(type) {
+					match lookup(initial.st, name) {
+						Ok(local) => Ok({ root: "$${local.roc}", c: name, type, base: "Node.${snake_case(type)}_default", prefix: "var " })
+						Err(_) => Err(NoBatch)
+					}
+				} else {
+					Err(NoBatch)
+				}
+			ExprStmt(Assign("=", left, _)) =>
+				match lvalue(st, left) {
+					Ok({ root, path: [{ type, field: _ }], local: Ok(c), .. }) =>
+						Ok({ root, c, type, base: "${accessor(type)}(${root})", prefix: "" })
+					_ => Err(NoBatch)
+				}
+			_ => Err(NoBatch)
+		}
+	match seed {
+		Err(_) => { st: initial.st, lines: initial.lines, count: 1 }
+		Ok(s) => {
+			is_decl = s.prefix == "var "
+			var $st = if is_decl initial.st else st
+			var $count = if is_decl 1.U64 else 0.U64
+			var $fields = []
+			var $names = []
+			while $count < items.len() {
+				match items.get($count) {
+					Ok(ExprStmt(Assign("=", left, right))) => {
+						if !independent_value(right, s.c) { break }
+						if $st.stores.any(|store|
+							(store.source == s.c or (store.target.local == Ok(s.c) and store.target.path.is_empty())) and
+							match lookup($st, store.source) {
+								Ok({ type: NodePtr(_), .. }) => Bool.True
+								_ => Bool.False
+							}) { break }
+						match lvalue($st, left) {
+							Ok(target) =>
+								match target.path {
+									[{ type, field }] => {
+										if target.root != s.root or type != s.type or $names.contains(field) { break }
+										r = assignment($st, "=", left, right)
+										# A propagated alias or a diagnostic must remain at its
+										# original statement, not disappear into a record literal.
+										if r.lines.len() != 1 or r.st.problems != $st.problems { break }
+										value = expr($st, right, Ok(target.type))
+										$fields = $fields.append("${field_name(field)}: ${value.out.code}")
+										$names = $names.append(field)
+										$st = r.st
+										$count = $count + 1
+									}
+									_ => break
+								}
+							Err(_) => break
+						}
+					}
+					_ => break
+				}
+			}
+			if $count <= 1 {
+				{ st: initial.st, lines: initial.lines, count: 1 }
+			} else {
+				{ st: $st, count: $count, lines: ["${s.prefix}${s.root} = Node.${tag_of(s.type)}({ ..${s.base}, ${Str.join_with($fields, ", ")} })"] }
+			}
+		}
+	}
+}
+
+independent_value : CParse.Expr, Str -> Bool
+independent_value = |e, root|
+	match e {
+		Ident(name) => name != root
+		Num(_) | CharLit(_) | StrLit(_) => Bool.True
+		# These are immutable parser input reads, not arbitrary node accessors.
+		Field(Index(Ident("yyvsp"), _), _) | Index(Ident("yylsp"), _) => Bool.True
+		_ => Bool.False
+	}
+
 stmt : St, CParse.Stmt -> { st : St, lines : Lines }
 stmt = |st, s|
 	match s {
@@ -774,10 +904,12 @@ stmt = |st, s|
 			saved = st.locals
 			var $st = st
 			var $lines = []
-			for item in items {
-				r = stmt($st, item)
+			var $i = 0.U64
+			while $i < items.len() {
+				r = batch($st, items.drop_first($i))
 				$st = r.st
 				$lines = $lines.concat(r.lines)
+				$i = $i + r.count
 			}
 			# Stores into a local declared in the block end with it.
 			kept = $st.stores.keep_if(|x| store_in_scope(saved, x))
@@ -889,7 +1021,7 @@ slot_of = |st, e|
 			if name == "llast" or name == "llast_node" or name == "linitial" or name == "linitial_node" or name == "lsecond" or name == "lsecond_node" {
 				match lvalue(st, list) {
 					Ok(target) => {
-						read = expr(st, list, Ok(ListPtr)).out.code
+						read = retained_expr(st, list, Ok(ListPtr)).code
 						index = if name.starts_with("llast") "(${read}.len() - 1)" else if name.starts_with("lsecond") "1" else "0"
 						Ok({ list: target, list_code: read, index })
 					}
@@ -1183,7 +1315,7 @@ foreach = |st, name, args, body| {
 							Err(_) => Err(NoAlias)
 						}
 					$st_body = { ..named.st, locals: named.st.locals.append({ c: var_name, roc: named.roc, type: NodePtr(type), alias }) }
-					$pre = ["var $${named.roc} = (${loop_entry.list}.get(${loop_entry.index}) ?? Node.Null)"]
+					$pre = ["var $${named.roc} = (${loop_entry.list}.get(${loop_entry.index}) ?? Null)"]
 				}
 				Err(_) => {}
 			}
@@ -1322,6 +1454,12 @@ yyerror = |st, msg| {
 
 translate_action : Translate.Env, U64, U64, Str, CParse.Stmt -> Translate.Output
 translate_action = |env, rule, len, rule_text, body| {
+	t = translate_action_body(env, rule, len, rule_text, body, Bool.False)
+	{ code: "## ${rule_text}\nrule_${rule.to_str()} : Rt.Ctx, List(Rt.Value), List(I64), I64 -> Try(Rt.Value, Scan.Problem)\nrule_${rule.to_str()} = |${Str.join_with(t.params, ", ")}| ${t.body}", problems: t.problems }
+}
+
+translate_action_body : Translate.Env, U64, U64, Str, CParse.Stmt, Bool -> Translate.ActionTemplate
+translate_action_body = |env, rule, len, rule_text, body, parameterize| {
 	code_text = CParse.show(body)
 	result_member = member_of(code_text, "yyval.")
 	result_type = env.members.get(result_member) ?? NodePtr("Node")
@@ -1337,6 +1475,8 @@ translate_action = |env, rule, len, rule_text, body| {
 		published: [],
 		stores: [],
 		result_type,
+		parameterize,
+		literals: [],
 	}
 	r = stmt(st0, body)
 	# The values and locations the action uses.
@@ -1359,10 +1499,13 @@ translate_action = |env, rule, len, rule_text, body| {
 	body_lines = value_lines.concat(used_locations).append(result_init).concat(r.lines).append("Ok(Rt.${wrap_fn(result_type)}($result))")
 	body_text = Str.join_with(body_lines, "\n")
 	param = |name| if uses_word(body_text, name) name else "_${name}"
-	lines = ["## ${rule_text}", "rule_${rule.to_str()} : Rt.Ctx, List(Rt.Value), List(I64), I64 -> Try(Rt.Value, Scan.Problem)", "rule_${rule.to_str()} = |${param("ctx")}, ${param("v")}, ${param("l")}, ${param("loc")}| {"]
-		.concat(indent(body_lines))
-		.append("}")
-	{ code: Str.join_with(lines, "\n"), problems: r.st.problems }
+	params = ["ctx", "v", "l", "loc"].map(param).concat(r.st.literals.map(|literal| param(literal.name)))
+	{
+		params,
+		body: Str.join_with(["{"].concat(indent(CleanLocals.with_names(body_lines, params))).append("}"), "\n"),
+		args: r.st.literals.map(|literal| literal.code),
+		problems: r.st.problems,
+	}
 }
 
 offset_text : U64, U64 -> Str
@@ -1424,6 +1567,8 @@ translate_function = |env, func, sig| {
 		published: [],
 		stores: [],
 		result_type: sig.returns,
+		parameterize: Bool.False,
+		literals: [],
 	}
 	var $st = st0
 	var $params = []
@@ -1464,7 +1609,7 @@ translate_function = |env, func, sig| {
 			Err(_) => [if sig.fails "Ok({})" else "{}"]
 		}
 	lines = ["${sig.roc} : ${Str.join_with(param_sig, ", ")} -> ${ret}", "${sig.roc} = |${Str.join_with(used_params, ", ")}| {"]
-		.concat(indent(used_copies.concat(tail)))
+		.concat(indent(CleanLocals.with_names(used_copies.concat(tail), used_params)))
 		.append("}")
 	{ code: Str.join_with(lines, "\n"), problems: r.st.problems }
 }
@@ -1554,7 +1699,7 @@ read_from = |st, c, e|
 				Err(_) => []
 			}
 		Cond(test, a, b) => {
-			code = expr(st, test, Ok(Boolean)).out.code
+			code = retained_expr(st, test, Ok(Boolean)).code
 			yes = read_from(st, c, a).map(|s| { ..s, guard: Ok(code) })
 			no = read_from(st, c, b).map(|s| { ..s, guard: Ok("!(${code})") })
 			yes.concat(no)

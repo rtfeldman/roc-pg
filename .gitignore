@@ -27,3 +27,4 @@ generated-docs/
 # Local only, never committed: Postgres source, libpg_query, the oracle and
 # its output
 local/
+.ctfe-investigation/

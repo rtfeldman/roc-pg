@@ -22,6 +22,7 @@ import Structs
 import Translate
 import Walk
 import TreeJson
+import RuleBodies
 
 src = "local/postgres-18.6/src"
 
@@ -154,15 +155,15 @@ main! = |_args| {
 	members = union_members(prologue)
 	env = { consts, errcodes, structs, sigs, members, node_types: types }
 
-	# Translate.
-	var $rule_code = []
-	var $dispatch = []
+	# Translate before interning: literal slots carry the translator's
+	# resolved I64 type, and all other code must match exactly. Each dispatch
+	# arm keeps its grammar label even when the implementation is shared.
+	var $rules = RuleBodies.empty({})
 	for a in $actions {
 		len = lengths.get(a.rule) ?? 0
-		out = Translate.action(env, a.rule, len, a.rule_text, a.body)
-		$rule_code = $rule_code.append(out.code)
+		out = Translate.action_template(env, a.rule, len, a.rule_text, a.body)
+		$rules = RuleBodies.add($rules, a.rule, a.rule_text, out)
 		$problems = $problems.concat(out.problems)
-		$dispatch = $dispatch.append("\t\t\t${a.rule.to_str()} => rule_${a.rule.to_str()}(ctx, v, l, loc)")
 	}
 	var $func_code = []
 	for f in funcs {
@@ -179,7 +180,7 @@ main! = |_args| {
 	actions_roc = Str.join_with(
 		[
 			header,
-			"## Postgres 18.6's grammar actions, one function per rule of",
+			"## Postgres 18.6's grammar actions, sharing identical typed bodies from",
 			"## `src/backend/parser/gram.y`, and the helper functions they call,",
 			"## translated from C by `tools/actions.roc`. Do not edit: change the",
 			"## translator, or `tools/actions_hand.roc` for the helpers ported by hand.",
@@ -194,9 +195,9 @@ main! = |_args| {
 			"\trun = |rule, ctx, v, l, loc|",
 			"\t\tmatch rule {",
 		]
-			.concat($dispatch)
-			.concat(["\t\t\t_ => Ok(v.get(0) ?? Rt.of_node(Node.Null))", "\t\t}", "}", ""])
-			.concat($rule_code.map(|c| "${c}\n"))
+			.concat($rules.dispatch)
+			.concat(["\t\t\t_ => Ok(v.get(0) ?? Rt.of_node(Null))", "\t\t}", "}", ""])
+			.concat($rules.code.map(|c| "${c}\n"))
 			.concat($func_code.map(|c| "${c}\n"))
 			.append(hand),
 		"\n",
@@ -208,7 +209,7 @@ main! = |_args| {
 		Stdout.line!("  JSON: field type not written: ${u}")?
 	}
 	Path.write_utf8!(Path.utf8("local/gram/problems.txt"), Str.join_with($problems, "\n"))?
-	Stdout.line!("${$actions.len().to_str()} actions, ${funcs.len().to_str()} helpers translated, ${types.len().to_str()} node types, ${$problems.len().to_str()} problems (local/gram/problems.txt)")?
+	Stdout.line!("${$actions.len().to_str()} actions (${$rules.code.len().to_str()} distinct bodies), ${funcs.len().to_str()} helpers translated, ${types.len().to_str()} node types, ${$problems.len().to_str()} problems (local/gram/problems.txt)")?
 	for p in $problems.take_first(30) {
 		Stdout.line!("  ${p}")?
 	}
@@ -352,7 +353,16 @@ node_module = |header, types, structs| {
 			fields_text : List(Str)
 			fields_text = fields.map(|f| "${Translate.snake(f.name)} : ${if is_embedded(f.type, structs) "Node" else Translate.roc_type_of(f.type)}")
 			defaults : List(Str)
-			defaults = fields.map(|f| "${Translate.snake(f.name)}: ${if is_embedded(f.type, structs) "Node.${tag(f.type)}(Node.${Translate.snake(f.type)}_default)" else Translate.zero_of(f.type)}")
+			# Sharing the constant here avoids duplicating the large Node type.
+			# Action expressions use inline Null instead: reading the constant
+			# repeatedly during compile-time parsing is substantially slower.
+			defaults = fields.map(|f| {
+				zero = match Translate.ctype(f.type) {
+					NodePtr(_) => "Node.null"
+					_ => Translate.zero_of(f.type)
+				}
+				"${Translate.snake(f.name)}: ${if is_embedded(f.type, structs) "Node.${tag(f.type)}(Node.${Translate.snake(f.type)}_default)" else zero}"
+			})
 			snake = Translate.snake(t)
 			record_type = if fields.is_empty() "{}" else "{ ${Str.join_with(fields_text, ", ")} }"
 			record_default = if fields.is_empty() "{}" else "{ ${Str.join_with(defaults, ", ")} }"
@@ -391,7 +401,7 @@ node_module = |header, types, structs| {
 			"\tNodeList(List(Node)),",
 		]
 			.concat(tags)
-			.concat(["].{", "\t## A `char *`: the text, or NULL.", "\tText : Try(Str, [Null])", ""])
+			.concat(["].{", "\t## The immutable null node, shared by record defaults.", "\tnull : Node", "\tnull = Null", "", "\t## A `char *`: the text, or NULL.", "\tText : Try(Str, [Null])", ""])
 			.concat(records)
 			.concat(
 				[

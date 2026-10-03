@@ -256,6 +256,10 @@ Node := [
 	XmlExpr(Node.XmlExpr),
 	XmlSerialize(Node.XmlSerialize),
 ].{
+	## The immutable null node, shared by record defaults.
+	null : Node
+	null = Null
+
 	## A `char *`: the text, or NULL.
 	Text : Try(Str, [Null])
 
@@ -289,7 +293,7 @@ Node := [
 	AConst : { val : Node, isnull : Bool, location : I64 }
 
 	a_const_default : Node.AConst
-	a_const_default = { val: Node.Null, isnull: Bool.False, location: 0.I64 }
+	a_const_default = { val: Node.null, isnull: Bool.False, location: 0.I64 }
 
 	a_const_of : Node -> Node.AConst
 	a_const_of = |n|
@@ -302,7 +306,7 @@ Node := [
 	AExpr : { kind : I64, name : List(Node), lexpr : Node, rexpr : Node, rexpr_list_start : I64, rexpr_list_end : I64, location : I64 }
 
 	a_expr_default : Node.AExpr
-	a_expr_default = { kind: 0.I64, name: [], lexpr: Node.Null, rexpr: Node.Null, rexpr_list_start: 0.I64, rexpr_list_end: 0.I64, location: 0.I64 }
+	a_expr_default = { kind: 0.I64, name: [], lexpr: Node.null, rexpr: Node.null, rexpr_list_start: 0.I64, rexpr_list_end: 0.I64, location: 0.I64 }
 
 	a_expr_of : Node -> Node.AExpr
 	a_expr_of = |n|
@@ -315,7 +319,7 @@ Node := [
 	AIndices : { is_slice : Bool, lidx : Node, uidx : Node }
 
 	a_indices_default : Node.AIndices
-	a_indices_default = { is_slice: Bool.False, lidx: Node.Null, uidx: Node.Null }
+	a_indices_default = { is_slice: Bool.False, lidx: Node.null, uidx: Node.null }
 
 	a_indices_of : Node -> Node.AIndices
 	a_indices_of = |n|
@@ -328,7 +332,7 @@ Node := [
 	AIndirection : { arg : Node, indirection : List(Node) }
 
 	a_indirection_default : Node.AIndirection
-	a_indirection_default = { arg: Node.Null, indirection: [] }
+	a_indirection_default = { arg: Node.null, indirection: [] }
 
 	a_indirection_of : Node -> Node.AIndirection
 	a_indirection_of = |n|
@@ -406,7 +410,7 @@ Node := [
 	AlterDatabaseSetStmt : { dbname : Node.Text, setstmt : Node }
 
 	alter_database_set_stmt_default : Node.AlterDatabaseSetStmt
-	alter_database_set_stmt_default = { dbname: Err(Null), setstmt: Node.Null }
+	alter_database_set_stmt_default = { dbname: Err(Null), setstmt: Node.null }
 
 	alter_database_set_stmt_of : Node -> Node.AlterDatabaseSetStmt
 	alter_database_set_stmt_of = |n|
@@ -432,7 +436,7 @@ Node := [
 	AlterDefaultPrivilegesStmt : { options : List(Node), action : Node }
 
 	alter_default_privileges_stmt_default : Node.AlterDefaultPrivilegesStmt
-	alter_default_privileges_stmt_default = { options: [], action: Node.Null }
+	alter_default_privileges_stmt_default = { options: [], action: Node.null }
 
 	alter_default_privileges_stmt_of : Node -> Node.AlterDefaultPrivilegesStmt
 	alter_default_privileges_stmt_of = |n|
@@ -445,7 +449,7 @@ Node := [
 	AlterDomainStmt : { subtype : I64, type_name : List(Node), name : Node.Text, def : Node, behavior : I64, missing_ok : Bool }
 
 	alter_domain_stmt_default : Node.AlterDomainStmt
-	alter_domain_stmt_default = { subtype: 0.I64, type_name: [], name: Err(Null), def: Node.Null, behavior: 0.I64, missing_ok: Bool.False }
+	alter_domain_stmt_default = { subtype: 0.I64, type_name: [], name: Err(Null), def: Node.null, behavior: 0.I64, missing_ok: Bool.False }
 
 	alter_domain_stmt_of : Node -> Node.AlterDomainStmt
 	alter_domain_stmt_of = |n|
@@ -484,7 +488,7 @@ Node := [
 	AlterExtensionContentsStmt : { extname : Node.Text, action : I64, objtype : I64, object : Node }
 
 	alter_extension_contents_stmt_default : Node.AlterExtensionContentsStmt
-	alter_extension_contents_stmt_default = { extname: Err(Null), action: 0.I64, objtype: 0.I64, object: Node.Null }
+	alter_extension_contents_stmt_default = { extname: Err(Null), action: 0.I64, objtype: 0.I64, object: Node.null }
 
 	alter_extension_contents_stmt_of : Node -> Node.AlterExtensionContentsStmt
 	alter_extension_contents_stmt_of = |n|
@@ -536,7 +540,7 @@ Node := [
 	AlterFunctionStmt : { objtype : I64, func : Node, actions : List(Node) }
 
 	alter_function_stmt_default : Node.AlterFunctionStmt
-	alter_function_stmt_default = { objtype: 0.I64, func: Node.Null, actions: [] }
+	alter_function_stmt_default = { objtype: 0.I64, func: Node.null, actions: [] }
 
 	alter_function_stmt_of : Node -> Node.AlterFunctionStmt
 	alter_function_stmt_of = |n|
@@ -549,7 +553,7 @@ Node := [
 	AlterObjectDependsStmt : { object_type : I64, relation : Node, object : Node, extname : Node, remove : Bool }
 
 	alter_object_depends_stmt_default : Node.AlterObjectDependsStmt
-	alter_object_depends_stmt_default = { object_type: 0.I64, relation: Node.Null, object: Node.Null, extname: Node.Null, remove: Bool.False }
+	alter_object_depends_stmt_default = { object_type: 0.I64, relation: Node.null, object: Node.null, extname: Node.null, remove: Bool.False }
 
 	alter_object_depends_stmt_of : Node -> Node.AlterObjectDependsStmt
 	alter_object_depends_stmt_of = |n|
@@ -562,7 +566,7 @@ Node := [
 	AlterObjectSchemaStmt : { object_type : I64, relation : Node, object : Node, newschema : Node.Text, missing_ok : Bool }
 
 	alter_object_schema_stmt_default : Node.AlterObjectSchemaStmt
-	alter_object_schema_stmt_default = { object_type: 0.I64, relation: Node.Null, object: Node.Null, newschema: Err(Null), missing_ok: Bool.False }
+	alter_object_schema_stmt_default = { object_type: 0.I64, relation: Node.null, object: Node.null, newschema: Err(Null), missing_ok: Bool.False }
 
 	alter_object_schema_stmt_of : Node -> Node.AlterObjectSchemaStmt
 	alter_object_schema_stmt_of = |n|
@@ -588,7 +592,7 @@ Node := [
 	AlterOperatorStmt : { opername : Node, options : List(Node) }
 
 	alter_operator_stmt_default : Node.AlterOperatorStmt
-	alter_operator_stmt_default = { opername: Node.Null, options: [] }
+	alter_operator_stmt_default = { opername: Node.null, options: [] }
 
 	alter_operator_stmt_of : Node -> Node.AlterOperatorStmt
 	alter_operator_stmt_of = |n|
@@ -601,7 +605,7 @@ Node := [
 	AlterOwnerStmt : { object_type : I64, relation : Node, object : Node, newowner : Node }
 
 	alter_owner_stmt_default : Node.AlterOwnerStmt
-	alter_owner_stmt_default = { object_type: 0.I64, relation: Node.Null, object: Node.Null, newowner: Node.Null }
+	alter_owner_stmt_default = { object_type: 0.I64, relation: Node.null, object: Node.null, newowner: Node.null }
 
 	alter_owner_stmt_of : Node -> Node.AlterOwnerStmt
 	alter_owner_stmt_of = |n|
@@ -614,7 +618,7 @@ Node := [
 	AlterPolicyStmt : { policy_name : Node.Text, table : Node, roles : List(Node), qual : Node, with_check : Node }
 
 	alter_policy_stmt_default : Node.AlterPolicyStmt
-	alter_policy_stmt_default = { policy_name: Err(Null), table: Node.Null, roles: [], qual: Node.Null, with_check: Node.Null }
+	alter_policy_stmt_default = { policy_name: Err(Null), table: Node.null, roles: [], qual: Node.null, with_check: Node.null }
 
 	alter_policy_stmt_of : Node -> Node.AlterPolicyStmt
 	alter_policy_stmt_of = |n|
@@ -640,7 +644,7 @@ Node := [
 	AlterRoleSetStmt : { role : Node, database : Node.Text, setstmt : Node }
 
 	alter_role_set_stmt_default : Node.AlterRoleSetStmt
-	alter_role_set_stmt_default = { role: Node.Null, database: Err(Null), setstmt: Node.Null }
+	alter_role_set_stmt_default = { role: Node.null, database: Err(Null), setstmt: Node.null }
 
 	alter_role_set_stmt_of : Node -> Node.AlterRoleSetStmt
 	alter_role_set_stmt_of = |n|
@@ -653,7 +657,7 @@ Node := [
 	AlterRoleStmt : { role : Node, options : List(Node), action : I64 }
 
 	alter_role_stmt_default : Node.AlterRoleStmt
-	alter_role_stmt_default = { role: Node.Null, options: [], action: 0.I64 }
+	alter_role_stmt_default = { role: Node.null, options: [], action: 0.I64 }
 
 	alter_role_stmt_of : Node -> Node.AlterRoleStmt
 	alter_role_stmt_of = |n|
@@ -666,7 +670,7 @@ Node := [
 	AlterSeqStmt : { sequence : Node, options : List(Node), for_identity : Bool, missing_ok : Bool }
 
 	alter_seq_stmt_default : Node.AlterSeqStmt
-	alter_seq_stmt_default = { sequence: Node.Null, options: [], for_identity: Bool.False, missing_ok: Bool.False }
+	alter_seq_stmt_default = { sequence: Node.null, options: [], for_identity: Bool.False, missing_ok: Bool.False }
 
 	alter_seq_stmt_of : Node -> Node.AlterSeqStmt
 	alter_seq_stmt_of = |n|
@@ -679,7 +683,7 @@ Node := [
 	AlterStatsStmt : { defnames : List(Node), stxstattarget : Node, missing_ok : Bool }
 
 	alter_stats_stmt_default : Node.AlterStatsStmt
-	alter_stats_stmt_default = { defnames: [], stxstattarget: Node.Null, missing_ok: Bool.False }
+	alter_stats_stmt_default = { defnames: [], stxstattarget: Node.null, missing_ok: Bool.False }
 
 	alter_stats_stmt_of : Node -> Node.AlterStatsStmt
 	alter_stats_stmt_of = |n|
@@ -705,7 +709,7 @@ Node := [
 	AlterSystemStmt : { setstmt : Node }
 
 	alter_system_stmt_default : Node.AlterSystemStmt
-	alter_system_stmt_default = { setstmt: Node.Null }
+	alter_system_stmt_default = { setstmt: Node.null }
 
 	alter_system_stmt_of : Node -> Node.AlterSystemStmt
 	alter_system_stmt_of = |n|
@@ -744,7 +748,7 @@ Node := [
 	AlterTableCmd : { subtype : I64, name : Node.Text, num : I64, newowner : Node, def : Node, behavior : I64, missing_ok : Bool, recurse : Bool }
 
 	alter_table_cmd_default : Node.AlterTableCmd
-	alter_table_cmd_default = { subtype: 0.I64, name: Err(Null), num: 0.I64, newowner: Node.Null, def: Node.Null, behavior: 0.I64, missing_ok: Bool.False, recurse: Bool.False }
+	alter_table_cmd_default = { subtype: 0.I64, name: Err(Null), num: 0.I64, newowner: Node.null, def: Node.null, behavior: 0.I64, missing_ok: Bool.False, recurse: Bool.False }
 
 	alter_table_cmd_of : Node -> Node.AlterTableCmd
 	alter_table_cmd_of = |n|
@@ -783,7 +787,7 @@ Node := [
 	AlterTableStmt : { relation : Node, cmds : List(Node), objtype : I64, missing_ok : Bool }
 
 	alter_table_stmt_default : Node.AlterTableStmt
-	alter_table_stmt_default = { relation: Node.Null, cmds: [], objtype: 0.I64, missing_ok: Bool.False }
+	alter_table_stmt_default = { relation: Node.null, cmds: [], objtype: 0.I64, missing_ok: Bool.False }
 
 	alter_table_stmt_of : Node -> Node.AlterTableStmt
 	alter_table_stmt_of = |n|
@@ -809,7 +813,7 @@ Node := [
 	AlterUserMappingStmt : { user : Node, servername : Node.Text, options : List(Node) }
 
 	alter_user_mapping_stmt_default : Node.AlterUserMappingStmt
-	alter_user_mapping_stmt_default = { user: Node.Null, servername: Err(Null), options: [] }
+	alter_user_mapping_stmt_default = { user: Node.null, servername: Err(Null), options: [] }
 
 	alter_user_mapping_stmt_of : Node -> Node.AlterUserMappingStmt
 	alter_user_mapping_stmt_of = |n|
@@ -861,7 +865,7 @@ Node := [
 	BooleanTest : { arg : Node, booltesttype : I64, location : I64 }
 
 	boolean_test_default : Node.BooleanTest
-	boolean_test_default = { arg: Node.Null, booltesttype: 0.I64, location: 0.I64 }
+	boolean_test_default = { arg: Node.null, booltesttype: 0.I64, location: 0.I64 }
 
 	boolean_test_of : Node -> Node.BooleanTest
 	boolean_test_of = |n|
@@ -874,7 +878,7 @@ Node := [
 	CTECycleClause : { cycle_col_list : List(Node), cycle_mark_column : Node.Text, cycle_mark_value : Node, cycle_mark_default : Node, cycle_path_column : Node.Text, location : I64, cycle_mark_type : I64, cycle_mark_typmod : I64, cycle_mark_collation : I64, cycle_mark_neop : I64 }
 
 	cte_cycle_clause_default : Node.CTECycleClause
-	cte_cycle_clause_default = { cycle_col_list: [], cycle_mark_column: Err(Null), cycle_mark_value: Node.Null, cycle_mark_default: Node.Null, cycle_path_column: Err(Null), location: 0.I64, cycle_mark_type: 0.I64, cycle_mark_typmod: 0.I64, cycle_mark_collation: 0.I64, cycle_mark_neop: 0.I64 }
+	cte_cycle_clause_default = { cycle_col_list: [], cycle_mark_column: Err(Null), cycle_mark_value: Node.null, cycle_mark_default: Node.null, cycle_path_column: Err(Null), location: 0.I64, cycle_mark_type: 0.I64, cycle_mark_typmod: 0.I64, cycle_mark_collation: 0.I64, cycle_mark_neop: 0.I64 }
 
 	cte_cycle_clause_of : Node -> Node.CTECycleClause
 	cte_cycle_clause_of = |n|
@@ -900,7 +904,7 @@ Node := [
 	CallStmt : { funccall : Node, funcexpr : Node, outargs : List(Node) }
 
 	call_stmt_default : Node.CallStmt
-	call_stmt_default = { funccall: Node.Null, funcexpr: Node.Null, outargs: [] }
+	call_stmt_default = { funccall: Node.null, funcexpr: Node.null, outargs: [] }
 
 	call_stmt_of : Node -> Node.CallStmt
 	call_stmt_of = |n|
@@ -913,7 +917,7 @@ Node := [
 	CaseExpr : { casetype : I64, casecollid : I64, arg : Node, args : List(Node), defresult : Node, location : I64 }
 
 	case_expr_default : Node.CaseExpr
-	case_expr_default = { casetype: 0.I64, casecollid: 0.I64, arg: Node.Null, args: [], defresult: Node.Null, location: 0.I64 }
+	case_expr_default = { casetype: 0.I64, casecollid: 0.I64, arg: Node.null, args: [], defresult: Node.null, location: 0.I64 }
 
 	case_expr_of : Node -> Node.CaseExpr
 	case_expr_of = |n|
@@ -926,7 +930,7 @@ Node := [
 	CaseWhen : { expr : Node, result : Node, location : I64 }
 
 	case_when_default : Node.CaseWhen
-	case_when_default = { expr: Node.Null, result: Node.Null, location: 0.I64 }
+	case_when_default = { expr: Node.null, result: Node.null, location: 0.I64 }
 
 	case_when_of : Node -> Node.CaseWhen
 	case_when_of = |n|
@@ -965,7 +969,7 @@ Node := [
 	ClusterStmt : { relation : Node, indexname : Node.Text, params : List(Node) }
 
 	cluster_stmt_default : Node.ClusterStmt
-	cluster_stmt_default = { relation: Node.Null, indexname: Err(Null), params: [] }
+	cluster_stmt_default = { relation: Node.null, indexname: Err(Null), params: [] }
 
 	cluster_stmt_of : Node -> Node.ClusterStmt
 	cluster_stmt_of = |n|
@@ -991,7 +995,7 @@ Node := [
 	CollateClause : { arg : Node, collname : List(Node), location : I64 }
 
 	collate_clause_default : Node.CollateClause
-	collate_clause_default = { arg: Node.Null, collname: [], location: 0.I64 }
+	collate_clause_default = { arg: Node.null, collname: [], location: 0.I64 }
 
 	collate_clause_of : Node -> Node.CollateClause
 	collate_clause_of = |n|
@@ -1004,7 +1008,7 @@ Node := [
 	ColumnDef : { colname : Node.Text, type_name : Node, compression : Node.Text, inhcount : I64, is_local : Bool, is_not_null : Bool, is_from_type : Bool, storage : I64, storage_name : Node.Text, raw_default : Node, cooked_default : Node, identity : I64, identity_sequence : Node, generated : I64, coll_clause : Node, coll_oid : I64, constraints : List(Node), fdwoptions : List(Node), location : I64 }
 
 	column_def_default : Node.ColumnDef
-	column_def_default = { colname: Err(Null), type_name: Node.Null, compression: Err(Null), inhcount: 0.I64, is_local: Bool.False, is_not_null: Bool.False, is_from_type: Bool.False, storage: 0.I64, storage_name: Err(Null), raw_default: Node.Null, cooked_default: Node.Null, identity: 0.I64, identity_sequence: Node.Null, generated: 0.I64, coll_clause: Node.Null, coll_oid: 0.I64, constraints: [], fdwoptions: [], location: 0.I64 }
+	column_def_default = { colname: Err(Null), type_name: Node.null, compression: Err(Null), inhcount: 0.I64, is_local: Bool.False, is_not_null: Bool.False, is_from_type: Bool.False, storage: 0.I64, storage_name: Err(Null), raw_default: Node.null, cooked_default: Node.null, identity: 0.I64, identity_sequence: Node.null, generated: 0.I64, coll_clause: Node.null, coll_oid: 0.I64, constraints: [], fdwoptions: [], location: 0.I64 }
 
 	column_def_of : Node -> Node.ColumnDef
 	column_def_of = |n|
@@ -1030,7 +1034,7 @@ Node := [
 	CommentStmt : { objtype : I64, object : Node, comment : Node.Text }
 
 	comment_stmt_default : Node.CommentStmt
-	comment_stmt_default = { objtype: 0.I64, object: Node.Null, comment: Err(Null) }
+	comment_stmt_default = { objtype: 0.I64, object: Node.null, comment: Err(Null) }
 
 	comment_stmt_of : Node -> Node.CommentStmt
 	comment_stmt_of = |n|
@@ -1043,7 +1047,7 @@ Node := [
 	CommonTableExpr : { ctename : Node.Text, aliascolnames : List(Node), ctematerialized : I64, ctequery : Node, search_clause : Node, cycle_clause : Node, location : I64, cterecursive : Bool, cterefcount : I64, ctecolnames : List(Node), ctecoltypes : List(Node), ctecoltypmods : List(Node), ctecolcollations : List(Node) }
 
 	common_table_expr_default : Node.CommonTableExpr
-	common_table_expr_default = { ctename: Err(Null), aliascolnames: [], ctematerialized: 0.I64, ctequery: Node.Null, search_clause: Node.Null, cycle_clause: Node.Null, location: 0.I64, cterecursive: Bool.False, cterefcount: 0.I64, ctecolnames: [], ctecoltypes: [], ctecoltypmods: [], ctecolcollations: [] }
+	common_table_expr_default = { ctename: Err(Null), aliascolnames: [], ctematerialized: 0.I64, ctequery: Node.null, search_clause: Node.null, cycle_clause: Node.null, location: 0.I64, cterecursive: Bool.False, cterefcount: 0.I64, ctecolnames: [], ctecoltypes: [], ctecoltypmods: [], ctecolcollations: [] }
 
 	common_table_expr_of : Node -> Node.CommonTableExpr
 	common_table_expr_of = |n|
@@ -1056,7 +1060,7 @@ Node := [
 	CompositeTypeStmt : { typevar : Node, coldeflist : List(Node) }
 
 	composite_type_stmt_default : Node.CompositeTypeStmt
-	composite_type_stmt_default = { typevar: Node.Null, coldeflist: [] }
+	composite_type_stmt_default = { typevar: Node.null, coldeflist: [] }
 
 	composite_type_stmt_of : Node -> Node.CompositeTypeStmt
 	composite_type_stmt_of = |n|
@@ -1069,7 +1073,7 @@ Node := [
 	Constraint : { contype : I64, conname : Node.Text, deferrable : Bool, initdeferred : Bool, is_enforced : Bool, skip_validation : Bool, initially_valid : Bool, is_no_inherit : Bool, raw_expr : Node, cooked_expr : Node.Text, generated_when : I64, generated_kind : I64, nulls_not_distinct : Bool, keys : List(Node), without_overlaps : Bool, including : List(Node), exclusions : List(Node), options : List(Node), indexname : Node.Text, indexspace : Node.Text, reset_default_tblspc : Bool, access_method : Node.Text, where_clause : Node, pktable : Node, fk_attrs : List(Node), pk_attrs : List(Node), fk_with_period : Bool, pk_with_period : Bool, fk_matchtype : I64, fk_upd_action : I64, fk_del_action : I64, fk_del_set_cols : List(Node), old_conpfeqop : List(Node), old_pktable_oid : I64, location : I64 }
 
 	constraint_default : Node.Constraint
-	constraint_default = { contype: 0.I64, conname: Err(Null), deferrable: Bool.False, initdeferred: Bool.False, is_enforced: Bool.False, skip_validation: Bool.False, initially_valid: Bool.False, is_no_inherit: Bool.False, raw_expr: Node.Null, cooked_expr: Err(Null), generated_when: 0.I64, generated_kind: 0.I64, nulls_not_distinct: Bool.False, keys: [], without_overlaps: Bool.False, including: [], exclusions: [], options: [], indexname: Err(Null), indexspace: Err(Null), reset_default_tblspc: Bool.False, access_method: Err(Null), where_clause: Node.Null, pktable: Node.Null, fk_attrs: [], pk_attrs: [], fk_with_period: Bool.False, pk_with_period: Bool.False, fk_matchtype: 0.I64, fk_upd_action: 0.I64, fk_del_action: 0.I64, fk_del_set_cols: [], old_conpfeqop: [], old_pktable_oid: 0.I64, location: 0.I64 }
+	constraint_default = { contype: 0.I64, conname: Err(Null), deferrable: Bool.False, initdeferred: Bool.False, is_enforced: Bool.False, skip_validation: Bool.False, initially_valid: Bool.False, is_no_inherit: Bool.False, raw_expr: Node.null, cooked_expr: Err(Null), generated_when: 0.I64, generated_kind: 0.I64, nulls_not_distinct: Bool.False, keys: [], without_overlaps: Bool.False, including: [], exclusions: [], options: [], indexname: Err(Null), indexspace: Err(Null), reset_default_tblspc: Bool.False, access_method: Err(Null), where_clause: Node.null, pktable: Node.null, fk_attrs: [], pk_attrs: [], fk_with_period: Bool.False, pk_with_period: Bool.False, fk_matchtype: 0.I64, fk_upd_action: 0.I64, fk_del_action: 0.I64, fk_del_set_cols: [], old_conpfeqop: [], old_pktable_oid: 0.I64, location: 0.I64 }
 
 	constraint_of : Node -> Node.Constraint
 	constraint_of = |n|
@@ -1095,7 +1099,7 @@ Node := [
 	CopyStmt : { relation : Node, query : Node, attlist : List(Node), is_from : Bool, is_program : Bool, filename : Node.Text, options : List(Node), where_clause : Node }
 
 	copy_stmt_default : Node.CopyStmt
-	copy_stmt_default = { relation: Node.Null, query: Node.Null, attlist: [], is_from: Bool.False, is_program: Bool.False, filename: Err(Null), options: [], where_clause: Node.Null }
+	copy_stmt_default = { relation: Node.null, query: Node.null, attlist: [], is_from: Bool.False, is_program: Bool.False, filename: Err(Null), options: [], where_clause: Node.null }
 
 	copy_stmt_of : Node -> Node.CopyStmt
 	copy_stmt_of = |n|
@@ -1121,7 +1125,7 @@ Node := [
 	CreateCastStmt : { sourcetype : Node, targettype : Node, func : Node, context : I64, inout : Bool }
 
 	create_cast_stmt_default : Node.CreateCastStmt
-	create_cast_stmt_default = { sourcetype: Node.Null, targettype: Node.Null, func: Node.Null, context: 0.I64, inout: Bool.False }
+	create_cast_stmt_default = { sourcetype: Node.null, targettype: Node.null, func: Node.null, context: 0.I64, inout: Bool.False }
 
 	create_cast_stmt_of : Node -> Node.CreateCastStmt
 	create_cast_stmt_of = |n|
@@ -1147,7 +1151,7 @@ Node := [
 	CreateDomainStmt : { domainname : List(Node), type_name : Node, coll_clause : Node, constraints : List(Node) }
 
 	create_domain_stmt_default : Node.CreateDomainStmt
-	create_domain_stmt_default = { domainname: [], type_name: Node.Null, coll_clause: Node.Null, constraints: [] }
+	create_domain_stmt_default = { domainname: [], type_name: Node.null, coll_clause: Node.null, constraints: [] }
 
 	create_domain_stmt_of : Node -> Node.CreateDomainStmt
 	create_domain_stmt_of = |n|
@@ -1238,7 +1242,7 @@ Node := [
 	CreateFunctionStmt : { is_procedure : Bool, replace : Bool, funcname : List(Node), parameters : List(Node), return_type : Node, options : List(Node), sql_body : Node }
 
 	create_function_stmt_default : Node.CreateFunctionStmt
-	create_function_stmt_default = { is_procedure: Bool.False, replace: Bool.False, funcname: [], parameters: [], return_type: Node.Null, options: [], sql_body: Node.Null }
+	create_function_stmt_default = { is_procedure: Bool.False, replace: Bool.False, funcname: [], parameters: [], return_type: Node.null, options: [], sql_body: Node.null }
 
 	create_function_stmt_of : Node -> Node.CreateFunctionStmt
 	create_function_stmt_of = |n|
@@ -1251,7 +1255,7 @@ Node := [
 	CreateOpClassItem : { itemtype : I64, name : Node, number : I64, order_family : List(Node), class_args : List(Node), storedtype : Node }
 
 	create_op_class_item_default : Node.CreateOpClassItem
-	create_op_class_item_default = { itemtype: 0.I64, name: Node.Null, number: 0.I64, order_family: [], class_args: [], storedtype: Node.Null }
+	create_op_class_item_default = { itemtype: 0.I64, name: Node.null, number: 0.I64, order_family: [], class_args: [], storedtype: Node.null }
 
 	create_op_class_item_of : Node -> Node.CreateOpClassItem
 	create_op_class_item_of = |n|
@@ -1264,7 +1268,7 @@ Node := [
 	CreateOpClassStmt : { opclassname : List(Node), opfamilyname : List(Node), amname : Node.Text, datatype : Node, items : List(Node), is_default : Bool }
 
 	create_op_class_stmt_default : Node.CreateOpClassStmt
-	create_op_class_stmt_default = { opclassname: [], opfamilyname: [], amname: Err(Null), datatype: Node.Null, items: [], is_default: Bool.False }
+	create_op_class_stmt_default = { opclassname: [], opfamilyname: [], amname: Err(Null), datatype: Node.null, items: [], is_default: Bool.False }
 
 	create_op_class_stmt_of : Node -> Node.CreateOpClassStmt
 	create_op_class_stmt_of = |n|
@@ -1303,7 +1307,7 @@ Node := [
 	CreatePolicyStmt : { policy_name : Node.Text, table : Node, cmd_name : Node.Text, permissive : Bool, roles : List(Node), qual : Node, with_check : Node }
 
 	create_policy_stmt_default : Node.CreatePolicyStmt
-	create_policy_stmt_default = { policy_name: Err(Null), table: Node.Null, cmd_name: Err(Null), permissive: Bool.False, roles: [], qual: Node.Null, with_check: Node.Null }
+	create_policy_stmt_default = { policy_name: Err(Null), table: Node.null, cmd_name: Err(Null), permissive: Bool.False, roles: [], qual: Node.null, with_check: Node.null }
 
 	create_policy_stmt_of : Node -> Node.CreatePolicyStmt
 	create_policy_stmt_of = |n|
@@ -1355,7 +1359,7 @@ Node := [
 	CreateSchemaStmt : { schemaname : Node.Text, authrole : Node, schema_elts : List(Node), if_not_exists : Bool }
 
 	create_schema_stmt_default : Node.CreateSchemaStmt
-	create_schema_stmt_default = { schemaname: Err(Null), authrole: Node.Null, schema_elts: [], if_not_exists: Bool.False }
+	create_schema_stmt_default = { schemaname: Err(Null), authrole: Node.null, schema_elts: [], if_not_exists: Bool.False }
 
 	create_schema_stmt_of : Node -> Node.CreateSchemaStmt
 	create_schema_stmt_of = |n|
@@ -1368,7 +1372,7 @@ Node := [
 	CreateSeqStmt : { sequence : Node, options : List(Node), owner_id : I64, for_identity : Bool, if_not_exists : Bool }
 
 	create_seq_stmt_default : Node.CreateSeqStmt
-	create_seq_stmt_default = { sequence: Node.Null, options: [], owner_id: 0.I64, for_identity: Bool.False, if_not_exists: Bool.False }
+	create_seq_stmt_default = { sequence: Node.null, options: [], owner_id: 0.I64, for_identity: Bool.False, if_not_exists: Bool.False }
 
 	create_seq_stmt_of : Node -> Node.CreateSeqStmt
 	create_seq_stmt_of = |n|
@@ -1394,7 +1398,7 @@ Node := [
 	CreateStmt : { relation : Node, table_elts : List(Node), inh_relations : List(Node), partbound : Node, partspec : Node, of_typename : Node, constraints : List(Node), nnconstraints : List(Node), options : List(Node), oncommit : I64, tablespacename : Node.Text, access_method : Node.Text, if_not_exists : Bool }
 
 	create_stmt_default : Node.CreateStmt
-	create_stmt_default = { relation: Node.Null, table_elts: [], inh_relations: [], partbound: Node.Null, partspec: Node.Null, of_typename: Node.Null, constraints: [], nnconstraints: [], options: [], oncommit: 0.I64, tablespacename: Err(Null), access_method: Err(Null), if_not_exists: Bool.False }
+	create_stmt_default = { relation: Node.null, table_elts: [], inh_relations: [], partbound: Node.null, partspec: Node.null, of_typename: Node.null, constraints: [], nnconstraints: [], options: [], oncommit: 0.I64, tablespacename: Err(Null), access_method: Err(Null), if_not_exists: Bool.False }
 
 	create_stmt_of : Node -> Node.CreateStmt
 	create_stmt_of = |n|
@@ -1420,7 +1424,7 @@ Node := [
 	CreateTableAsStmt : { query : Node, into : Node, objtype : I64, is_select_into : Bool, if_not_exists : Bool }
 
 	create_table_as_stmt_default : Node.CreateTableAsStmt
-	create_table_as_stmt_default = { query: Node.Null, into: Node.Null, objtype: 0.I64, is_select_into: Bool.False, if_not_exists: Bool.False }
+	create_table_as_stmt_default = { query: Node.null, into: Node.null, objtype: 0.I64, is_select_into: Bool.False, if_not_exists: Bool.False }
 
 	create_table_as_stmt_of : Node -> Node.CreateTableAsStmt
 	create_table_as_stmt_of = |n|
@@ -1433,7 +1437,7 @@ Node := [
 	CreateTableSpaceStmt : { tablespacename : Node.Text, owner : Node, location : Node.Text, options : List(Node) }
 
 	create_table_space_stmt_default : Node.CreateTableSpaceStmt
-	create_table_space_stmt_default = { tablespacename: Err(Null), owner: Node.Null, location: Err(Null), options: [] }
+	create_table_space_stmt_default = { tablespacename: Err(Null), owner: Node.null, location: Err(Null), options: [] }
 
 	create_table_space_stmt_of : Node -> Node.CreateTableSpaceStmt
 	create_table_space_stmt_of = |n|
@@ -1446,7 +1450,7 @@ Node := [
 	CreateTransformStmt : { replace : Bool, type_name : Node, lang : Node.Text, fromsql : Node, tosql : Node }
 
 	create_transform_stmt_default : Node.CreateTransformStmt
-	create_transform_stmt_default = { replace: Bool.False, type_name: Node.Null, lang: Err(Null), fromsql: Node.Null, tosql: Node.Null }
+	create_transform_stmt_default = { replace: Bool.False, type_name: Node.null, lang: Err(Null), fromsql: Node.null, tosql: Node.null }
 
 	create_transform_stmt_of : Node -> Node.CreateTransformStmt
 	create_transform_stmt_of = |n|
@@ -1459,7 +1463,7 @@ Node := [
 	CreateTrigStmt : { replace : Bool, isconstraint : Bool, trigname : Node.Text, relation : Node, funcname : List(Node), args : List(Node), row : Bool, timing : I64, events : I64, columns : List(Node), when_clause : Node, transition_rels : List(Node), deferrable : Bool, initdeferred : Bool, constrrel : Node }
 
 	create_trig_stmt_default : Node.CreateTrigStmt
-	create_trig_stmt_default = { replace: Bool.False, isconstraint: Bool.False, trigname: Err(Null), relation: Node.Null, funcname: [], args: [], row: Bool.False, timing: 0.I64, events: 0.I64, columns: [], when_clause: Node.Null, transition_rels: [], deferrable: Bool.False, initdeferred: Bool.False, constrrel: Node.Null }
+	create_trig_stmt_default = { replace: Bool.False, isconstraint: Bool.False, trigname: Err(Null), relation: Node.null, funcname: [], args: [], row: Bool.False, timing: 0.I64, events: 0.I64, columns: [], when_clause: Node.null, transition_rels: [], deferrable: Bool.False, initdeferred: Bool.False, constrrel: Node.null }
 
 	create_trig_stmt_of : Node -> Node.CreateTrigStmt
 	create_trig_stmt_of = |n|
@@ -1472,7 +1476,7 @@ Node := [
 	CreateUserMappingStmt : { user : Node, servername : Node.Text, if_not_exists : Bool, options : List(Node) }
 
 	create_user_mapping_stmt_default : Node.CreateUserMappingStmt
-	create_user_mapping_stmt_default = { user: Node.Null, servername: Err(Null), if_not_exists: Bool.False, options: [] }
+	create_user_mapping_stmt_default = { user: Node.null, servername: Err(Null), if_not_exists: Bool.False, options: [] }
 
 	create_user_mapping_stmt_of : Node -> Node.CreateUserMappingStmt
 	create_user_mapping_stmt_of = |n|
@@ -1524,7 +1528,7 @@ Node := [
 	DeclareCursorStmt : { portalname : Node.Text, options : I64, query : Node }
 
 	declare_cursor_stmt_default : Node.DeclareCursorStmt
-	declare_cursor_stmt_default = { portalname: Err(Null), options: 0.I64, query: Node.Null }
+	declare_cursor_stmt_default = { portalname: Err(Null), options: 0.I64, query: Node.null }
 
 	declare_cursor_stmt_of : Node -> Node.DeclareCursorStmt
 	declare_cursor_stmt_of = |n|
@@ -1537,7 +1541,7 @@ Node := [
 	DefElem : { defnamespace : Node.Text, defname : Node.Text, arg : Node, defaction : I64, location : I64 }
 
 	def_elem_default : Node.DefElem
-	def_elem_default = { defnamespace: Err(Null), defname: Err(Null), arg: Node.Null, defaction: 0.I64, location: 0.I64 }
+	def_elem_default = { defnamespace: Err(Null), defname: Err(Null), arg: Node.null, defaction: 0.I64, location: 0.I64 }
 
 	def_elem_of : Node -> Node.DefElem
 	def_elem_of = |n|
@@ -1563,7 +1567,7 @@ Node := [
 	DeleteStmt : { relation : Node, using_clause : List(Node), where_clause : Node, returning_clause : Node, with_clause : Node }
 
 	delete_stmt_default : Node.DeleteStmt
-	delete_stmt_default = { relation: Node.Null, using_clause: [], where_clause: Node.Null, returning_clause: Node.Null, with_clause: Node.Null }
+	delete_stmt_default = { relation: Node.null, using_clause: [], where_clause: Node.null, returning_clause: Node.null, with_clause: Node.null }
 
 	delete_stmt_of : Node -> Node.DeleteStmt
 	delete_stmt_of = |n|
@@ -1667,7 +1671,7 @@ Node := [
 	DropUserMappingStmt : { user : Node, servername : Node.Text, missing_ok : Bool }
 
 	drop_user_mapping_stmt_default : Node.DropUserMappingStmt
-	drop_user_mapping_stmt_default = { user: Node.Null, servername: Err(Null), missing_ok: Bool.False }
+	drop_user_mapping_stmt_default = { user: Node.null, servername: Err(Null), missing_ok: Bool.False }
 
 	drop_user_mapping_stmt_of : Node -> Node.DropUserMappingStmt
 	drop_user_mapping_stmt_of = |n|
@@ -1706,7 +1710,7 @@ Node := [
 	ExplainStmt : { query : Node, options : List(Node) }
 
 	explain_stmt_default : Node.ExplainStmt
-	explain_stmt_default = { query: Node.Null, options: [] }
+	explain_stmt_default = { query: Node.null, options: [] }
 
 	explain_stmt_of : Node -> Node.ExplainStmt
 	explain_stmt_of = |n|
@@ -1745,7 +1749,7 @@ Node := [
 	FuncCall : { funcname : List(Node), args : List(Node), agg_order : List(Node), agg_filter : Node, over : Node, agg_within_group : Bool, agg_star : Bool, agg_distinct : Bool, func_variadic : Bool, funcformat : I64, location : I64 }
 
 	func_call_default : Node.FuncCall
-	func_call_default = { funcname: [], args: [], agg_order: [], agg_filter: Node.Null, over: Node.Null, agg_within_group: Bool.False, agg_star: Bool.False, agg_distinct: Bool.False, func_variadic: Bool.False, funcformat: 0.I64, location: 0.I64 }
+	func_call_default = { funcname: [], args: [], agg_order: [], agg_filter: Node.null, over: Node.null, agg_within_group: Bool.False, agg_star: Bool.False, agg_distinct: Bool.False, func_variadic: Bool.False, funcformat: 0.I64, location: 0.I64 }
 
 	func_call_of : Node -> Node.FuncCall
 	func_call_of = |n|
@@ -1758,7 +1762,7 @@ Node := [
 	FunctionParameter : { name : Node.Text, arg_type : Node, mode : I64, defexpr : Node, location : I64 }
 
 	function_parameter_default : Node.FunctionParameter
-	function_parameter_default = { name: Err(Null), arg_type: Node.Null, mode: 0.I64, defexpr: Node.Null, location: 0.I64 }
+	function_parameter_default = { name: Err(Null), arg_type: Node.null, mode: 0.I64, defexpr: Node.null, location: 0.I64 }
 
 	function_parameter_of : Node -> Node.FunctionParameter
 	function_parameter_of = |n|
@@ -1771,7 +1775,7 @@ Node := [
 	GrantRoleStmt : { granted_roles : List(Node), grantee_roles : List(Node), is_grant : Bool, opt : List(Node), grantor : Node, behavior : I64 }
 
 	grant_role_stmt_default : Node.GrantRoleStmt
-	grant_role_stmt_default = { granted_roles: [], grantee_roles: [], is_grant: Bool.False, opt: [], grantor: Node.Null, behavior: 0.I64 }
+	grant_role_stmt_default = { granted_roles: [], grantee_roles: [], is_grant: Bool.False, opt: [], grantor: Node.null, behavior: 0.I64 }
 
 	grant_role_stmt_of : Node -> Node.GrantRoleStmt
 	grant_role_stmt_of = |n|
@@ -1784,7 +1788,7 @@ Node := [
 	GrantStmt : { is_grant : Bool, targtype : I64, objtype : I64, objects : List(Node), privileges : List(Node), grantees : List(Node), grant_option : Bool, grantor : Node, behavior : I64 }
 
 	grant_stmt_default : Node.GrantStmt
-	grant_stmt_default = { is_grant: Bool.False, targtype: 0.I64, objtype: 0.I64, objects: [], privileges: [], grantees: [], grant_option: Bool.False, grantor: Node.Null, behavior: 0.I64 }
+	grant_stmt_default = { is_grant: Bool.False, targtype: 0.I64, objtype: 0.I64, objects: [], privileges: [], grantees: [], grant_option: Bool.False, grantor: Node.null, behavior: 0.I64 }
 
 	grant_stmt_of : Node -> Node.GrantStmt
 	grant_stmt_of = |n|
@@ -1862,7 +1866,7 @@ Node := [
 	IndexElem : { name : Node.Text, expr : Node, indexcolname : Node.Text, collation : List(Node), opclass : List(Node), opclassopts : List(Node), ordering : I64, nulls_ordering : I64 }
 
 	index_elem_default : Node.IndexElem
-	index_elem_default = { name: Err(Null), expr: Node.Null, indexcolname: Err(Null), collation: [], opclass: [], opclassopts: [], ordering: 0.I64, nulls_ordering: 0.I64 }
+	index_elem_default = { name: Err(Null), expr: Node.null, indexcolname: Err(Null), collation: [], opclass: [], opclassopts: [], ordering: 0.I64, nulls_ordering: 0.I64 }
 
 	index_elem_of : Node -> Node.IndexElem
 	index_elem_of = |n|
@@ -1875,7 +1879,7 @@ Node := [
 	IndexStmt : { idxname : Node.Text, relation : Node, access_method : Node.Text, table_space : Node.Text, index_params : List(Node), index_including_params : List(Node), options : List(Node), where_clause : Node, exclude_op_names : List(Node), idxcomment : Node.Text, index_oid : I64, old_number : I64, old_create_subid : I64, old_first_relfilelocator_subid : I64, unique : Bool, nulls_not_distinct : Bool, primary : Bool, isconstraint : Bool, iswithoutoverlaps : Bool, deferrable : Bool, initdeferred : Bool, transformed : Bool, concurrent : Bool, if_not_exists : Bool, reset_default_tblspc : Bool }
 
 	index_stmt_default : Node.IndexStmt
-	index_stmt_default = { idxname: Err(Null), relation: Node.Null, access_method: Err(Null), table_space: Err(Null), index_params: [], index_including_params: [], options: [], where_clause: Node.Null, exclude_op_names: [], idxcomment: Err(Null), index_oid: 0.I64, old_number: 0.I64, old_create_subid: 0.I64, old_first_relfilelocator_subid: 0.I64, unique: Bool.False, nulls_not_distinct: Bool.False, primary: Bool.False, isconstraint: Bool.False, iswithoutoverlaps: Bool.False, deferrable: Bool.False, initdeferred: Bool.False, transformed: Bool.False, concurrent: Bool.False, if_not_exists: Bool.False, reset_default_tblspc: Bool.False }
+	index_stmt_default = { idxname: Err(Null), relation: Node.null, access_method: Err(Null), table_space: Err(Null), index_params: [], index_including_params: [], options: [], where_clause: Node.null, exclude_op_names: [], idxcomment: Err(Null), index_oid: 0.I64, old_number: 0.I64, old_create_subid: 0.I64, old_first_relfilelocator_subid: 0.I64, unique: Bool.False, nulls_not_distinct: Bool.False, primary: Bool.False, isconstraint: Bool.False, iswithoutoverlaps: Bool.False, deferrable: Bool.False, initdeferred: Bool.False, transformed: Bool.False, concurrent: Bool.False, if_not_exists: Bool.False, reset_default_tblspc: Bool.False }
 
 	index_stmt_of : Node -> Node.IndexStmt
 	index_stmt_of = |n|
@@ -1888,7 +1892,7 @@ Node := [
 	InferClause : { index_elems : List(Node), where_clause : Node, conname : Node.Text, location : I64 }
 
 	infer_clause_default : Node.InferClause
-	infer_clause_default = { index_elems: [], where_clause: Node.Null, conname: Err(Null), location: 0.I64 }
+	infer_clause_default = { index_elems: [], where_clause: Node.null, conname: Err(Null), location: 0.I64 }
 
 	infer_clause_of : Node -> Node.InferClause
 	infer_clause_of = |n|
@@ -1901,7 +1905,7 @@ Node := [
 	InsertStmt : { relation : Node, cols : List(Node), select_stmt : Node, on_conflict_clause : Node, returning_clause : Node, with_clause : Node, override : I64 }
 
 	insert_stmt_default : Node.InsertStmt
-	insert_stmt_default = { relation: Node.Null, cols: [], select_stmt: Node.Null, on_conflict_clause: Node.Null, returning_clause: Node.Null, with_clause: Node.Null, override: 0.I64 }
+	insert_stmt_default = { relation: Node.null, cols: [], select_stmt: Node.null, on_conflict_clause: Node.null, returning_clause: Node.null, with_clause: Node.null, override: 0.I64 }
 
 	insert_stmt_of : Node -> Node.InsertStmt
 	insert_stmt_of = |n|
@@ -1927,7 +1931,7 @@ Node := [
 	IntoClause : { rel : Node, col_names : List(Node), access_method : Node.Text, options : List(Node), on_commit : I64, table_space_name : Node.Text, view_query : Node, skip_data : Bool }
 
 	into_clause_default : Node.IntoClause
-	into_clause_default = { rel: Node.Null, col_names: [], access_method: Err(Null), options: [], on_commit: 0.I64, table_space_name: Err(Null), view_query: Node.Null, skip_data: Bool.False }
+	into_clause_default = { rel: Node.null, col_names: [], access_method: Err(Null), options: [], on_commit: 0.I64, table_space_name: Err(Null), view_query: Node.null, skip_data: Bool.False }
 
 	into_clause_of : Node -> Node.IntoClause
 	into_clause_of = |n|
@@ -1940,7 +1944,7 @@ Node := [
 	JoinExpr : { jointype : I64, is_natural : Bool, larg : Node, rarg : Node, using_clause : List(Node), join_using_alias : Node, quals : Node, alias : Node, rtindex : I64 }
 
 	join_expr_default : Node.JoinExpr
-	join_expr_default = { jointype: 0.I64, is_natural: Bool.False, larg: Node.Null, rarg: Node.Null, using_clause: [], join_using_alias: Node.Null, quals: Node.Null, alias: Node.Null, rtindex: 0.I64 }
+	join_expr_default = { jointype: 0.I64, is_natural: Bool.False, larg: Node.null, rarg: Node.null, using_clause: [], join_using_alias: Node.null, quals: Node.null, alias: Node.null, rtindex: 0.I64 }
 
 	join_expr_of : Node -> Node.JoinExpr
 	join_expr_of = |n|
@@ -1953,7 +1957,7 @@ Node := [
 	JsonAggConstructor : { output : Node, agg_filter : Node, agg_order : List(Node), over : Node, location : I64 }
 
 	json_agg_constructor_default : Node.JsonAggConstructor
-	json_agg_constructor_default = { output: Node.Null, agg_filter: Node.Null, agg_order: [], over: Node.Null, location: 0.I64 }
+	json_agg_constructor_default = { output: Node.null, agg_filter: Node.null, agg_order: [], over: Node.null, location: 0.I64 }
 
 	json_agg_constructor_of : Node -> Node.JsonAggConstructor
 	json_agg_constructor_of = |n|
@@ -1966,7 +1970,7 @@ Node := [
 	JsonArgument : { val : Node, name : Node.Text }
 
 	json_argument_default : Node.JsonArgument
-	json_argument_default = { val: Node.Null, name: Err(Null) }
+	json_argument_default = { val: Node.null, name: Err(Null) }
 
 	json_argument_of : Node -> Node.JsonArgument
 	json_argument_of = |n|
@@ -1979,7 +1983,7 @@ Node := [
 	JsonArrayAgg : { constructor : Node, arg : Node, absent_on_null : Bool }
 
 	json_array_agg_default : Node.JsonArrayAgg
-	json_array_agg_default = { constructor: Node.Null, arg: Node.Null, absent_on_null: Bool.False }
+	json_array_agg_default = { constructor: Node.null, arg: Node.null, absent_on_null: Bool.False }
 
 	json_array_agg_of : Node -> Node.JsonArrayAgg
 	json_array_agg_of = |n|
@@ -1992,7 +1996,7 @@ Node := [
 	JsonArrayConstructor : { exprs : List(Node), output : Node, absent_on_null : Bool, location : I64 }
 
 	json_array_constructor_default : Node.JsonArrayConstructor
-	json_array_constructor_default = { exprs: [], output: Node.Null, absent_on_null: Bool.False, location: 0.I64 }
+	json_array_constructor_default = { exprs: [], output: Node.null, absent_on_null: Bool.False, location: 0.I64 }
 
 	json_array_constructor_of : Node -> Node.JsonArrayConstructor
 	json_array_constructor_of = |n|
@@ -2005,7 +2009,7 @@ Node := [
 	JsonArrayQueryConstructor : { query : Node, output : Node, format : Node, absent_on_null : Bool, location : I64 }
 
 	json_array_query_constructor_default : Node.JsonArrayQueryConstructor
-	json_array_query_constructor_default = { query: Node.Null, output: Node.Null, format: Node.Null, absent_on_null: Bool.False, location: 0.I64 }
+	json_array_query_constructor_default = { query: Node.null, output: Node.null, format: Node.null, absent_on_null: Bool.False, location: 0.I64 }
 
 	json_array_query_constructor_of : Node -> Node.JsonArrayQueryConstructor
 	json_array_query_constructor_of = |n|
@@ -2018,7 +2022,7 @@ Node := [
 	JsonBehavior : { btype : I64, expr : Node, coerce : Bool, location : I64 }
 
 	json_behavior_default : Node.JsonBehavior
-	json_behavior_default = { btype: 0.I64, expr: Node.Null, coerce: Bool.False, location: 0.I64 }
+	json_behavior_default = { btype: 0.I64, expr: Node.null, coerce: Bool.False, location: 0.I64 }
 
 	json_behavior_of : Node -> Node.JsonBehavior
 	json_behavior_of = |n|
@@ -2044,7 +2048,7 @@ Node := [
 	JsonFuncExpr : { op : I64, column_name : Node.Text, context_item : Node, pathspec : Node, passing : List(Node), output : Node, on_empty : Node, on_error : Node, wrapper : I64, quotes : I64, location : I64 }
 
 	json_func_expr_default : Node.JsonFuncExpr
-	json_func_expr_default = { op: 0.I64, column_name: Err(Null), context_item: Node.Null, pathspec: Node.Null, passing: [], output: Node.Null, on_empty: Node.Null, on_error: Node.Null, wrapper: 0.I64, quotes: 0.I64, location: 0.I64 }
+	json_func_expr_default = { op: 0.I64, column_name: Err(Null), context_item: Node.null, pathspec: Node.null, passing: [], output: Node.null, on_empty: Node.null, on_error: Node.null, wrapper: 0.I64, quotes: 0.I64, location: 0.I64 }
 
 	json_func_expr_of : Node -> Node.JsonFuncExpr
 	json_func_expr_of = |n|
@@ -2057,7 +2061,7 @@ Node := [
 	JsonIsPredicate : { expr : Node, format : Node, item_type : I64, unique_keys : Bool, location : I64 }
 
 	json_is_predicate_default : Node.JsonIsPredicate
-	json_is_predicate_default = { expr: Node.Null, format: Node.Null, item_type: 0.I64, unique_keys: Bool.False, location: 0.I64 }
+	json_is_predicate_default = { expr: Node.null, format: Node.null, item_type: 0.I64, unique_keys: Bool.False, location: 0.I64 }
 
 	json_is_predicate_of : Node -> Node.JsonIsPredicate
 	json_is_predicate_of = |n|
@@ -2070,7 +2074,7 @@ Node := [
 	JsonKeyValue : { key : Node, value : Node }
 
 	json_key_value_default : Node.JsonKeyValue
-	json_key_value_default = { key: Node.Null, value: Node.Null }
+	json_key_value_default = { key: Node.null, value: Node.null }
 
 	json_key_value_of : Node -> Node.JsonKeyValue
 	json_key_value_of = |n|
@@ -2083,7 +2087,7 @@ Node := [
 	JsonObjectAgg : { constructor : Node, arg : Node, absent_on_null : Bool, unique : Bool }
 
 	json_object_agg_default : Node.JsonObjectAgg
-	json_object_agg_default = { constructor: Node.Null, arg: Node.Null, absent_on_null: Bool.False, unique: Bool.False }
+	json_object_agg_default = { constructor: Node.null, arg: Node.null, absent_on_null: Bool.False, unique: Bool.False }
 
 	json_object_agg_of : Node -> Node.JsonObjectAgg
 	json_object_agg_of = |n|
@@ -2096,7 +2100,7 @@ Node := [
 	JsonObjectConstructor : { exprs : List(Node), output : Node, absent_on_null : Bool, unique : Bool, location : I64 }
 
 	json_object_constructor_default : Node.JsonObjectConstructor
-	json_object_constructor_default = { exprs: [], output: Node.Null, absent_on_null: Bool.False, unique: Bool.False, location: 0.I64 }
+	json_object_constructor_default = { exprs: [], output: Node.null, absent_on_null: Bool.False, unique: Bool.False, location: 0.I64 }
 
 	json_object_constructor_of : Node -> Node.JsonObjectConstructor
 	json_object_constructor_of = |n|
@@ -2109,7 +2113,7 @@ Node := [
 	JsonOutput : { type_name : Node, returning : Node }
 
 	json_output_default : Node.JsonOutput
-	json_output_default = { type_name: Node.Null, returning: Node.Null }
+	json_output_default = { type_name: Node.null, returning: Node.null }
 
 	json_output_of : Node -> Node.JsonOutput
 	json_output_of = |n|
@@ -2122,7 +2126,7 @@ Node := [
 	JsonParseExpr : { expr : Node, output : Node, unique_keys : Bool, location : I64 }
 
 	json_parse_expr_default : Node.JsonParseExpr
-	json_parse_expr_default = { expr: Node.Null, output: Node.Null, unique_keys: Bool.False, location: 0.I64 }
+	json_parse_expr_default = { expr: Node.null, output: Node.null, unique_keys: Bool.False, location: 0.I64 }
 
 	json_parse_expr_of : Node -> Node.JsonParseExpr
 	json_parse_expr_of = |n|
@@ -2135,7 +2139,7 @@ Node := [
 	JsonReturning : { format : Node, typid : I64, typmod : I64 }
 
 	json_returning_default : Node.JsonReturning
-	json_returning_default = { format: Node.Null, typid: 0.I64, typmod: 0.I64 }
+	json_returning_default = { format: Node.null, typid: 0.I64, typmod: 0.I64 }
 
 	json_returning_of : Node -> Node.JsonReturning
 	json_returning_of = |n|
@@ -2148,7 +2152,7 @@ Node := [
 	JsonScalarExpr : { expr : Node, output : Node, location : I64 }
 
 	json_scalar_expr_default : Node.JsonScalarExpr
-	json_scalar_expr_default = { expr: Node.Null, output: Node.Null, location: 0.I64 }
+	json_scalar_expr_default = { expr: Node.null, output: Node.null, location: 0.I64 }
 
 	json_scalar_expr_of : Node -> Node.JsonScalarExpr
 	json_scalar_expr_of = |n|
@@ -2161,7 +2165,7 @@ Node := [
 	JsonSerializeExpr : { expr : Node, output : Node, location : I64 }
 
 	json_serialize_expr_default : Node.JsonSerializeExpr
-	json_serialize_expr_default = { expr: Node.Null, output: Node.Null, location: 0.I64 }
+	json_serialize_expr_default = { expr: Node.null, output: Node.null, location: 0.I64 }
 
 	json_serialize_expr_of : Node -> Node.JsonSerializeExpr
 	json_serialize_expr_of = |n|
@@ -2174,7 +2178,7 @@ Node := [
 	JsonTable : { context_item : Node, pathspec : Node, passing : List(Node), columns : List(Node), on_error : Node, alias : Node, lateral : Bool, location : I64 }
 
 	json_table_default : Node.JsonTable
-	json_table_default = { context_item: Node.Null, pathspec: Node.Null, passing: [], columns: [], on_error: Node.Null, alias: Node.Null, lateral: Bool.False, location: 0.I64 }
+	json_table_default = { context_item: Node.null, pathspec: Node.null, passing: [], columns: [], on_error: Node.null, alias: Node.null, lateral: Bool.False, location: 0.I64 }
 
 	json_table_of : Node -> Node.JsonTable
 	json_table_of = |n|
@@ -2187,7 +2191,7 @@ Node := [
 	JsonTableColumn : { coltype : I64, name : Node.Text, type_name : Node, pathspec : Node, format : Node, wrapper : I64, quotes : I64, columns : List(Node), on_empty : Node, on_error : Node, location : I64 }
 
 	json_table_column_default : Node.JsonTableColumn
-	json_table_column_default = { coltype: 0.I64, name: Err(Null), type_name: Node.Null, pathspec: Node.Null, format: Node.Null, wrapper: 0.I64, quotes: 0.I64, columns: [], on_empty: Node.Null, on_error: Node.Null, location: 0.I64 }
+	json_table_column_default = { coltype: 0.I64, name: Err(Null), type_name: Node.null, pathspec: Node.null, format: Node.null, wrapper: 0.I64, quotes: 0.I64, columns: [], on_empty: Node.null, on_error: Node.null, location: 0.I64 }
 
 	json_table_column_of : Node -> Node.JsonTableColumn
 	json_table_column_of = |n|
@@ -2200,7 +2204,7 @@ Node := [
 	JsonTablePathSpec : { string : Node, name : Node.Text, name_location : I64, location : I64 }
 
 	json_table_path_spec_default : Node.JsonTablePathSpec
-	json_table_path_spec_default = { string: Node.Null, name: Err(Null), name_location: 0.I64, location: 0.I64 }
+	json_table_path_spec_default = { string: Node.null, name: Err(Null), name_location: 0.I64, location: 0.I64 }
 
 	json_table_path_spec_of : Node -> Node.JsonTablePathSpec
 	json_table_path_spec_of = |n|
@@ -2213,7 +2217,7 @@ Node := [
 	JsonValueExpr : { raw_expr : Node, formatted_expr : Node, format : Node }
 
 	json_value_expr_default : Node.JsonValueExpr
-	json_value_expr_default = { raw_expr: Node.Null, formatted_expr: Node.Null, format: Node.Null }
+	json_value_expr_default = { raw_expr: Node.null, formatted_expr: Node.null, format: Node.null }
 
 	json_value_expr_of : Node -> Node.JsonValueExpr
 	json_value_expr_of = |n|
@@ -2239,7 +2243,7 @@ Node := [
 	KeyActions : { update_action : Node, delete_action : Node }
 
 	key_actions_default : Node.KeyActions
-	key_actions_default = { update_action: Node.Null, delete_action: Node.Null }
+	key_actions_default = { update_action: Node.null, delete_action: Node.null }
 
 	key_actions_of : Node -> Node.KeyActions
 	key_actions_of = |n|
@@ -2304,7 +2308,7 @@ Node := [
 	MergeStmt : { relation : Node, source_relation : Node, join_condition : Node, merge_when_clauses : List(Node), returning_clause : Node, with_clause : Node }
 
 	merge_stmt_default : Node.MergeStmt
-	merge_stmt_default = { relation: Node.Null, source_relation: Node.Null, join_condition: Node.Null, merge_when_clauses: [], returning_clause: Node.Null, with_clause: Node.Null }
+	merge_stmt_default = { relation: Node.null, source_relation: Node.null, join_condition: Node.null, merge_when_clauses: [], returning_clause: Node.null, with_clause: Node.null }
 
 	merge_stmt_of : Node -> Node.MergeStmt
 	merge_stmt_of = |n|
@@ -2330,7 +2334,7 @@ Node := [
 	MergeWhenClause : { match_kind : I64, command_type : I64, override : I64, condition : Node, target_list : List(Node), values : List(Node) }
 
 	merge_when_clause_default : Node.MergeWhenClause
-	merge_when_clause_default = { match_kind: 0.I64, command_type: 0.I64, override: 0.I64, condition: Node.Null, target_list: [], values: [] }
+	merge_when_clause_default = { match_kind: 0.I64, command_type: 0.I64, override: 0.I64, condition: Node.null, target_list: [], values: [] }
 
 	merge_when_clause_of : Node -> Node.MergeWhenClause
 	merge_when_clause_of = |n|
@@ -2356,7 +2360,7 @@ Node := [
 	MultiAssignRef : { source : Node, colno : I64, ncolumns : I64 }
 
 	multi_assign_ref_default : Node.MultiAssignRef
-	multi_assign_ref_default = { source: Node.Null, colno: 0.I64, ncolumns: 0.I64 }
+	multi_assign_ref_default = { source: Node.null, colno: 0.I64, ncolumns: 0.I64 }
 
 	multi_assign_ref_of : Node -> Node.MultiAssignRef
 	multi_assign_ref_of = |n|
@@ -2369,7 +2373,7 @@ Node := [
 	NamedArgExpr : { arg : Node, name : Node.Text, argnumber : I64, location : I64 }
 
 	named_arg_expr_default : Node.NamedArgExpr
-	named_arg_expr_default = { arg: Node.Null, name: Err(Null), argnumber: 0.I64, location: 0.I64 }
+	named_arg_expr_default = { arg: Node.null, name: Err(Null), argnumber: 0.I64, location: 0.I64 }
 
 	named_arg_expr_of : Node -> Node.NamedArgExpr
 	named_arg_expr_of = |n|
@@ -2395,7 +2399,7 @@ Node := [
 	NullTest : { arg : Node, nulltesttype : I64, argisrow : Bool, location : I64 }
 
 	null_test_default : Node.NullTest
-	null_test_default = { arg: Node.Null, nulltesttype: 0.I64, argisrow: Bool.False, location: 0.I64 }
+	null_test_default = { arg: Node.null, nulltesttype: 0.I64, argisrow: Bool.False, location: 0.I64 }
 
 	null_test_of : Node -> Node.NullTest
 	null_test_of = |n|
@@ -2421,7 +2425,7 @@ Node := [
 	OnConflictClause : { action : I64, infer : Node, target_list : List(Node), where_clause : Node, location : I64 }
 
 	on_conflict_clause_default : Node.OnConflictClause
-	on_conflict_clause_default = { action: 0.I64, infer: Node.Null, target_list: [], where_clause: Node.Null, location: 0.I64 }
+	on_conflict_clause_default = { action: 0.I64, infer: Node.null, target_list: [], where_clause: Node.null, location: 0.I64 }
 
 	on_conflict_clause_of : Node -> Node.OnConflictClause
 	on_conflict_clause_of = |n|
@@ -2434,7 +2438,7 @@ Node := [
 	PLAssignStmt : { name : Node.Text, indirection : List(Node), nnames : I64, val : Node, location : I64 }
 
 	pl_assign_stmt_default : Node.PLAssignStmt
-	pl_assign_stmt_default = { name: Err(Null), indirection: [], nnames: 0.I64, val: Node.Null, location: 0.I64 }
+	pl_assign_stmt_default = { name: Err(Null), indirection: [], nnames: 0.I64, val: Node.null, location: 0.I64 }
 
 	pl_assign_stmt_of : Node -> Node.PLAssignStmt
 	pl_assign_stmt_of = |n|
@@ -2473,7 +2477,7 @@ Node := [
 	PartitionCmd : { name : Node, bound : Node, concurrent : Bool }
 
 	partition_cmd_default : Node.PartitionCmd
-	partition_cmd_default = { name: Node.Null, bound: Node.Null, concurrent: Bool.False }
+	partition_cmd_default = { name: Node.null, bound: Node.null, concurrent: Bool.False }
 
 	partition_cmd_of : Node -> Node.PartitionCmd
 	partition_cmd_of = |n|
@@ -2486,7 +2490,7 @@ Node := [
 	PartitionElem : { name : Node.Text, expr : Node, collation : List(Node), opclass : List(Node), location : I64 }
 
 	partition_elem_default : Node.PartitionElem
-	partition_elem_default = { name: Err(Null), expr: Node.Null, collation: [], opclass: [], location: 0.I64 }
+	partition_elem_default = { name: Err(Null), expr: Node.null, collation: [], opclass: [], location: 0.I64 }
 
 	partition_elem_of : Node -> Node.PartitionElem
 	partition_elem_of = |n|
@@ -2512,7 +2516,7 @@ Node := [
 	PrepareStmt : { name : Node.Text, argtypes : List(Node), query : Node }
 
 	prepare_stmt_default : Node.PrepareStmt
-	prepare_stmt_default = { name: Err(Null), argtypes: [], query: Node.Null }
+	prepare_stmt_default = { name: Err(Null), argtypes: [], query: Node.null }
 
 	prepare_stmt_of : Node -> Node.PrepareStmt
 	prepare_stmt_of = |n|
@@ -2538,7 +2542,7 @@ Node := [
 	PublicationObjSpec : { pubobjtype : I64, name : Node.Text, pubtable : Node, location : I64 }
 
 	publication_obj_spec_default : Node.PublicationObjSpec
-	publication_obj_spec_default = { pubobjtype: 0.I64, name: Err(Null), pubtable: Node.Null, location: 0.I64 }
+	publication_obj_spec_default = { pubobjtype: 0.I64, name: Err(Null), pubtable: Node.null, location: 0.I64 }
 
 	publication_obj_spec_of : Node -> Node.PublicationObjSpec
 	publication_obj_spec_of = |n|
@@ -2551,7 +2555,7 @@ Node := [
 	PublicationTable : { relation : Node, where_clause : Node, columns : List(Node) }
 
 	publication_table_default : Node.PublicationTable
-	publication_table_default = { relation: Node.Null, where_clause: Node.Null, columns: [] }
+	publication_table_default = { relation: Node.null, where_clause: Node.null, columns: [] }
 
 	publication_table_of : Node -> Node.PublicationTable
 	publication_table_of = |n|
@@ -2564,7 +2568,7 @@ Node := [
 	RangeFunction : { lateral : Bool, ordinality : Bool, is_rowsfrom : Bool, functions : List(Node), alias : Node, coldeflist : List(Node) }
 
 	range_function_default : Node.RangeFunction
-	range_function_default = { lateral: Bool.False, ordinality: Bool.False, is_rowsfrom: Bool.False, functions: [], alias: Node.Null, coldeflist: [] }
+	range_function_default = { lateral: Bool.False, ordinality: Bool.False, is_rowsfrom: Bool.False, functions: [], alias: Node.null, coldeflist: [] }
 
 	range_function_of : Node -> Node.RangeFunction
 	range_function_of = |n|
@@ -2577,7 +2581,7 @@ Node := [
 	RangeSubselect : { lateral : Bool, subquery : Node, alias : Node }
 
 	range_subselect_default : Node.RangeSubselect
-	range_subselect_default = { lateral: Bool.False, subquery: Node.Null, alias: Node.Null }
+	range_subselect_default = { lateral: Bool.False, subquery: Node.null, alias: Node.null }
 
 	range_subselect_of : Node -> Node.RangeSubselect
 	range_subselect_of = |n|
@@ -2590,7 +2594,7 @@ Node := [
 	RangeTableFunc : { lateral : Bool, docexpr : Node, rowexpr : Node, namespaces : List(Node), columns : List(Node), alias : Node, location : I64 }
 
 	range_table_func_default : Node.RangeTableFunc
-	range_table_func_default = { lateral: Bool.False, docexpr: Node.Null, rowexpr: Node.Null, namespaces: [], columns: [], alias: Node.Null, location: 0.I64 }
+	range_table_func_default = { lateral: Bool.False, docexpr: Node.null, rowexpr: Node.null, namespaces: [], columns: [], alias: Node.null, location: 0.I64 }
 
 	range_table_func_of : Node -> Node.RangeTableFunc
 	range_table_func_of = |n|
@@ -2603,7 +2607,7 @@ Node := [
 	RangeTableFuncCol : { colname : Node.Text, type_name : Node, for_ordinality : Bool, is_not_null : Bool, colexpr : Node, coldefexpr : Node, location : I64 }
 
 	range_table_func_col_default : Node.RangeTableFuncCol
-	range_table_func_col_default = { colname: Err(Null), type_name: Node.Null, for_ordinality: Bool.False, is_not_null: Bool.False, colexpr: Node.Null, coldefexpr: Node.Null, location: 0.I64 }
+	range_table_func_col_default = { colname: Err(Null), type_name: Node.null, for_ordinality: Bool.False, is_not_null: Bool.False, colexpr: Node.null, coldefexpr: Node.null, location: 0.I64 }
 
 	range_table_func_col_of : Node -> Node.RangeTableFuncCol
 	range_table_func_col_of = |n|
@@ -2616,7 +2620,7 @@ Node := [
 	RangeTableSample : { relation : Node, method : List(Node), args : List(Node), repeatable : Node, location : I64 }
 
 	range_table_sample_default : Node.RangeTableSample
-	range_table_sample_default = { relation: Node.Null, method: [], args: [], repeatable: Node.Null, location: 0.I64 }
+	range_table_sample_default = { relation: Node.null, method: [], args: [], repeatable: Node.null, location: 0.I64 }
 
 	range_table_sample_of : Node -> Node.RangeTableSample
 	range_table_sample_of = |n|
@@ -2629,7 +2633,7 @@ Node := [
 	RangeVar : { catalogname : Node.Text, schemaname : Node.Text, relname : Node.Text, inh : Bool, relpersistence : I64, alias : Node, location : I64 }
 
 	range_var_default : Node.RangeVar
-	range_var_default = { catalogname: Err(Null), schemaname: Err(Null), relname: Err(Null), inh: Bool.False, relpersistence: 0.I64, alias: Node.Null, location: 0.I64 }
+	range_var_default = { catalogname: Err(Null), schemaname: Err(Null), relname: Err(Null), inh: Bool.False, relpersistence: 0.I64, alias: Node.null, location: 0.I64 }
 
 	range_var_of : Node -> Node.RangeVar
 	range_var_of = |n|
@@ -2642,7 +2646,7 @@ Node := [
 	RawStmt : { stmt : Node, stmt_location : I64, stmt_len : I64 }
 
 	raw_stmt_default : Node.RawStmt
-	raw_stmt_default = { stmt: Node.Null, stmt_location: 0.I64, stmt_len: 0.I64 }
+	raw_stmt_default = { stmt: Node.null, stmt_location: 0.I64, stmt_len: 0.I64 }
 
 	raw_stmt_of : Node -> Node.RawStmt
 	raw_stmt_of = |n|
@@ -2655,7 +2659,7 @@ Node := [
 	ReassignOwnedStmt : { roles : List(Node), newrole : Node }
 
 	reassign_owned_stmt_default : Node.ReassignOwnedStmt
-	reassign_owned_stmt_default = { roles: [], newrole: Node.Null }
+	reassign_owned_stmt_default = { roles: [], newrole: Node.null }
 
 	reassign_owned_stmt_of : Node -> Node.ReassignOwnedStmt
 	reassign_owned_stmt_of = |n|
@@ -2668,7 +2672,7 @@ Node := [
 	RefreshMatViewStmt : { concurrent : Bool, skip_data : Bool, relation : Node }
 
 	refresh_mat_view_stmt_default : Node.RefreshMatViewStmt
-	refresh_mat_view_stmt_default = { concurrent: Bool.False, skip_data: Bool.False, relation: Node.Null }
+	refresh_mat_view_stmt_default = { concurrent: Bool.False, skip_data: Bool.False, relation: Node.null }
 
 	refresh_mat_view_stmt_of : Node -> Node.RefreshMatViewStmt
 	refresh_mat_view_stmt_of = |n|
@@ -2681,7 +2685,7 @@ Node := [
 	ReindexStmt : { kind : I64, relation : Node, name : Node.Text, params : List(Node) }
 
 	reindex_stmt_default : Node.ReindexStmt
-	reindex_stmt_default = { kind: 0.I64, relation: Node.Null, name: Err(Null), params: [] }
+	reindex_stmt_default = { kind: 0.I64, relation: Node.null, name: Err(Null), params: [] }
 
 	reindex_stmt_of : Node -> Node.ReindexStmt
 	reindex_stmt_of = |n|
@@ -2694,7 +2698,7 @@ Node := [
 	RenameStmt : { rename_type : I64, relation_type : I64, relation : Node, object : Node, subname : Node.Text, newname : Node.Text, behavior : I64, missing_ok : Bool }
 
 	rename_stmt_default : Node.RenameStmt
-	rename_stmt_default = { rename_type: 0.I64, relation_type: 0.I64, relation: Node.Null, object: Node.Null, subname: Err(Null), newname: Err(Null), behavior: 0.I64, missing_ok: Bool.False }
+	rename_stmt_default = { rename_type: 0.I64, relation_type: 0.I64, relation: Node.null, object: Node.null, subname: Err(Null), newname: Err(Null), behavior: 0.I64, missing_ok: Bool.False }
 
 	rename_stmt_of : Node -> Node.RenameStmt
 	rename_stmt_of = |n|
@@ -2720,7 +2724,7 @@ Node := [
 	ResTarget : { name : Node.Text, indirection : List(Node), val : Node, location : I64 }
 
 	res_target_default : Node.ResTarget
-	res_target_default = { name: Err(Null), indirection: [], val: Node.Null, location: 0.I64 }
+	res_target_default = { name: Err(Null), indirection: [], val: Node.null, location: 0.I64 }
 
 	res_target_of : Node -> Node.ResTarget
 	res_target_of = |n|
@@ -2733,7 +2737,7 @@ Node := [
 	ReturnStmt : { returnval : Node }
 
 	return_stmt_default : Node.ReturnStmt
-	return_stmt_default = { returnval: Node.Null }
+	return_stmt_default = { returnval: Node.null }
 
 	return_stmt_of : Node -> Node.ReturnStmt
 	return_stmt_of = |n|
@@ -2798,7 +2802,7 @@ Node := [
 	RuleStmt : { relation : Node, rulename : Node.Text, where_clause : Node, event : I64, instead : Bool, actions : List(Node), replace : Bool }
 
 	rule_stmt_default : Node.RuleStmt
-	rule_stmt_default = { relation: Node.Null, rulename: Err(Null), where_clause: Node.Null, event: 0.I64, instead: Bool.False, actions: [], replace: Bool.False }
+	rule_stmt_default = { relation: Node.null, rulename: Err(Null), where_clause: Node.null, event: 0.I64, instead: Bool.False, actions: [], replace: Bool.False }
 
 	rule_stmt_of : Node -> Node.RuleStmt
 	rule_stmt_of = |n|
@@ -2824,7 +2828,7 @@ Node := [
 	SecLabelStmt : { objtype : I64, object : Node, provider : Node.Text, label : Node.Text }
 
 	sec_label_stmt_default : Node.SecLabelStmt
-	sec_label_stmt_default = { objtype: 0.I64, object: Node.Null, provider: Err(Null), label: Err(Null) }
+	sec_label_stmt_default = { objtype: 0.I64, object: Node.null, provider: Err(Null), label: Err(Null) }
 
 	sec_label_stmt_of : Node -> Node.SecLabelStmt
 	sec_label_stmt_of = |n|
@@ -2837,7 +2841,7 @@ Node := [
 	SelectLimit : { limit_offset : Node, limit_count : Node, limit_option : I64, offset_loc : I64, count_loc : I64, option_loc : I64 }
 
 	select_limit_default : Node.SelectLimit
-	select_limit_default = { limit_offset: Node.Null, limit_count: Node.Null, limit_option: 0.I64, offset_loc: 0.I64, count_loc: 0.I64, option_loc: 0.I64 }
+	select_limit_default = { limit_offset: Node.null, limit_count: Node.null, limit_option: 0.I64, offset_loc: 0.I64, count_loc: 0.I64, option_loc: 0.I64 }
 
 	select_limit_of : Node -> Node.SelectLimit
 	select_limit_of = |n|
@@ -2850,7 +2854,7 @@ Node := [
 	SelectStmt : { distinct_clause : List(Node), into_clause : Node, target_list : List(Node), from_clause : List(Node), where_clause : Node, group_clause : List(Node), group_distinct : Bool, having_clause : Node, window_clause : List(Node), values_lists : List(Node), sort_clause : List(Node), limit_offset : Node, limit_count : Node, limit_option : I64, locking_clause : List(Node), with_clause : Node, op : I64, all : Bool, larg : Node, rarg : Node }
 
 	select_stmt_default : Node.SelectStmt
-	select_stmt_default = { distinct_clause: [], into_clause: Node.Null, target_list: [], from_clause: [], where_clause: Node.Null, group_clause: [], group_distinct: Bool.False, having_clause: Node.Null, window_clause: [], values_lists: [], sort_clause: [], limit_offset: Node.Null, limit_count: Node.Null, limit_option: 0.I64, locking_clause: [], with_clause: Node.Null, op: 0.I64, all: Bool.False, larg: Node.Null, rarg: Node.Null }
+	select_stmt_default = { distinct_clause: [], into_clause: Node.null, target_list: [], from_clause: [], where_clause: Node.null, group_clause: [], group_distinct: Bool.False, having_clause: Node.null, window_clause: [], values_lists: [], sort_clause: [], limit_offset: Node.null, limit_count: Node.null, limit_option: 0.I64, locking_clause: [], with_clause: Node.null, op: 0.I64, all: Bool.False, larg: Node.null, rarg: Node.null }
 
 	select_stmt_of : Node -> Node.SelectStmt
 	select_stmt_of = |n|
@@ -2876,7 +2880,7 @@ Node := [
 	SortBy : { node : Node, sortby_dir : I64, sortby_nulls : I64, use_op : List(Node), location : I64 }
 
 	sort_by_default : Node.SortBy
-	sort_by_default = { node: Node.Null, sortby_dir: 0.I64, sortby_nulls: 0.I64, use_op: [], location: 0.I64 }
+	sort_by_default = { node: Node.null, sortby_dir: 0.I64, sortby_nulls: 0.I64, use_op: [], location: 0.I64 }
 
 	sort_by_of : Node -> Node.SortBy
 	sort_by_of = |n|
@@ -2889,7 +2893,7 @@ Node := [
 	StatsElem : { name : Node.Text, expr : Node }
 
 	stats_elem_default : Node.StatsElem
-	stats_elem_default = { name: Err(Null), expr: Node.Null }
+	stats_elem_default = { name: Err(Null), expr: Node.null }
 
 	stats_elem_of : Node -> Node.StatsElem
 	stats_elem_of = |n|
@@ -2915,7 +2919,7 @@ Node := [
 	SubLink : { sub_link_type : I64, sub_link_id : I64, testexpr : Node, oper_name : List(Node), subselect : Node, location : I64 }
 
 	sub_link_default : Node.SubLink
-	sub_link_default = { sub_link_type: 0.I64, sub_link_id: 0.I64, testexpr: Node.Null, oper_name: [], subselect: Node.Null, location: 0.I64 }
+	sub_link_default = { sub_link_type: 0.I64, sub_link_id: 0.I64, testexpr: Node.null, oper_name: [], subselect: Node.null, location: 0.I64 }
 
 	sub_link_of : Node -> Node.SubLink
 	sub_link_of = |n|
@@ -2928,7 +2932,7 @@ Node := [
 	TableLikeClause : { relation : Node, options : I64, relation_oid : I64 }
 
 	table_like_clause_default : Node.TableLikeClause
-	table_like_clause_default = { relation: Node.Null, options: 0.I64, relation_oid: 0.I64 }
+	table_like_clause_default = { relation: Node.null, options: 0.I64, relation_oid: 0.I64 }
 
 	table_like_clause_of : Node -> Node.TableLikeClause
 	table_like_clause_of = |n|
@@ -2980,7 +2984,7 @@ Node := [
 	TypeCast : { arg : Node, type_name : Node, location : I64 }
 
 	type_cast_default : Node.TypeCast
-	type_cast_default = { arg: Node.Null, type_name: Node.Null, location: 0.I64 }
+	type_cast_default = { arg: Node.null, type_name: Node.null, location: 0.I64 }
 
 	type_cast_of : Node -> Node.TypeCast
 	type_cast_of = |n|
@@ -3019,7 +3023,7 @@ Node := [
 	UpdateStmt : { relation : Node, target_list : List(Node), where_clause : Node, from_clause : List(Node), returning_clause : Node, with_clause : Node }
 
 	update_stmt_default : Node.UpdateStmt
-	update_stmt_default = { relation: Node.Null, target_list: [], where_clause: Node.Null, from_clause: [], returning_clause: Node.Null, with_clause: Node.Null }
+	update_stmt_default = { relation: Node.null, target_list: [], where_clause: Node.null, from_clause: [], returning_clause: Node.null, with_clause: Node.null }
 
 	update_stmt_of : Node -> Node.UpdateStmt
 	update_stmt_of = |n|
@@ -3032,7 +3036,7 @@ Node := [
 	VacuumRelation : { relation : Node, oid : I64, va_cols : List(Node) }
 
 	vacuum_relation_default : Node.VacuumRelation
-	vacuum_relation_default = { relation: Node.Null, oid: 0.I64, va_cols: [] }
+	vacuum_relation_default = { relation: Node.null, oid: 0.I64, va_cols: [] }
 
 	vacuum_relation_of : Node -> Node.VacuumRelation
 	vacuum_relation_of = |n|
@@ -3084,7 +3088,7 @@ Node := [
 	ViewStmt : { view : Node, aliases : List(Node), query : Node, replace : Bool, options : List(Node), with_check_option : I64 }
 
 	view_stmt_default : Node.ViewStmt
-	view_stmt_default = { view: Node.Null, aliases: [], query: Node.Null, replace: Bool.False, options: [], with_check_option: 0.I64 }
+	view_stmt_default = { view: Node.null, aliases: [], query: Node.null, replace: Bool.False, options: [], with_check_option: 0.I64 }
 
 	view_stmt_of : Node -> Node.ViewStmt
 	view_stmt_of = |n|
@@ -3097,7 +3101,7 @@ Node := [
 	WindowDef : { name : Node.Text, refname : Node.Text, partition_clause : List(Node), order_clause : List(Node), frame_options : I64, start_offset : Node, end_offset : Node, location : I64 }
 
 	window_def_default : Node.WindowDef
-	window_def_default = { name: Err(Null), refname: Err(Null), partition_clause: [], order_clause: [], frame_options: 0.I64, start_offset: Node.Null, end_offset: Node.Null, location: 0.I64 }
+	window_def_default = { name: Err(Null), refname: Err(Null), partition_clause: [], order_clause: [], frame_options: 0.I64, start_offset: Node.null, end_offset: Node.null, location: 0.I64 }
 
 	window_def_of : Node -> Node.WindowDef
 	window_def_of = |n|
@@ -3136,7 +3140,7 @@ Node := [
 	XmlSerialize : { xmloption : I64, expr : Node, type_name : Node, indent : Bool, location : I64 }
 
 	xml_serialize_default : Node.XmlSerialize
-	xml_serialize_default = { xmloption: 0.I64, expr: Node.Null, type_name: Node.Null, indent: Bool.False, location: 0.I64 }
+	xml_serialize_default = { xmloption: 0.I64, expr: Node.null, type_name: Node.null, indent: Bool.False, location: 0.I64 }
 
 	xml_serialize_of : Node -> Node.XmlSerialize
 	xml_serialize_of = |n|

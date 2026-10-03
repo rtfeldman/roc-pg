@@ -7,6 +7,11 @@ The checking works, but it's not fast. Two examples measure and profile that, on
 - [examples/small](examples/small/) is one table and 20 queries. `roc check` takes about 30 seconds and 14 GB of memory, and `roc build` about 2 minutes and 15 GB.
 - [examples/rebellion](examples/rebellion/) is sized like a real production app. `roc check` takes about 35 seconds and 17 GB, and `roc build` more than 30 minutes and 25 GB.
 
+Those are historical measurements, before the generated-action cleanup. See
+[the cleanup report](docs/actions-refactor-report.md) for the changes, validation,
+and before/after measurements, and [the compiler analysis](docs/actions-performance-analysis.md)
+for the remaining compiler bottlenecks.
+
 ## What's it look like?
 
 ```roc
@@ -139,6 +144,11 @@ That is about 0.4 seconds for each field of each distinct row type, whether or n
 - `Check.roc` walks the tree against the catalog: tables, columns, parameters, row fields, NULL. `Overload.roc` picks functions and operators by argument types, using the built in types and functions in `Builtins.roc`.
 
 `Grammar.roc`, `Node.roc`, `Actions.roc`, `Keywords.roc` and `Builtins.roc` are generated from Postgres's sources by the programs in `tools/`.
+
+When changing or regenerating code, follow the
+[code-generation guidelines](docs/code-generation-guidelines.md). They explain
+the representation, reuse, correctness, and measurement principles behind the
+generated-action cleanup, with a checklist for future generation agents.
 
 ## Tests
 

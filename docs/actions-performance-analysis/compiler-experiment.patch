@@ -1,0 +1,306 @@
+--- a/src/check/Check.zig	2026-10-02 00:16:42
++++ b/src/check/Check.zig	2026-10-02 01:50:27
+@@ -6002,6 +6002,10 @@
+     // Each seed's walk finishes before the next starts, so a row belongs to
+     // the earliest source node whose type reaches it.
+     for (seeds.items) |seed| try self.walkSettledRoot(seed, &walk_stack, &semantic_row_roots);
++    // TEMP-EXPERIMENT profiling: how many type vars are reachable from published roots.
++    if (@import("builtin").link_libc and std.c.getenv("ROC_PROFILE_CACHE") != null) {
++        std.debug.print("CACHE_PROFILE {s} settled_reachable_vars={d} var_set_capacity={d} seeds={d} total_vars={d}\n", .{ self.cir.module_name, self.var_set.count(), self.var_set.capacity(), seeds.items.len, self.types.len() });
++    }
+ 
+     var row_roots: std.ArrayListUnmanaged(Var) = .empty;
+     defer row_roots.deinit(self.gpa);
+@@ -21701,6 +21705,9 @@
+                 // grounds and discharges the expected type's constraints.
+                 if (arg_expr_idx_slice.len == 0) break :projected null;
+                 _ = nested_expected.aggregateType() orelse break :projected null;
++                // TEMP-EXPERIMENT (ROC_EXP_SKIP_TAG_PROJECTION): measure the cost
++                // of the whole-union expected-shape copy by skipping projection.
++                if (exhaustive.tempExperimentEnabled("ROC_EXP_SKIP_TAG_PROJECTION")) break :projected null;
+                 const projected_top = self.scratch_vars.top();
+                 defer self.scratch_vars.clearFrom(projected_top);
+                 for (arg_expr_idx_slice) |_| {
+@@ -21756,11 +21763,12 @@
+         // nominal //
+         .e_nominal => |nominal| {
+             try self.noteTypeDeclReferenceForLocalProcedures(nominal.nominal_type_decl);
+-            const prepared = try self.prepareNominalTypeUsage(
++            const prepared = try self.prepareNominalTypeUsageProjected(
+                 expr_var,
+                 ModuleEnv.varFrom(nominal.nominal_type_decl),
+                 expr_region,
+                 env,
++                self.constructedTagNameForProjection(nominal.backing_expr),
+             );
+             const backing_expected = if (prepared) |usage|
+                 child_expected.withContextualType(.{
+@@ -21790,11 +21798,12 @@
+         .e_nominal_external => |nominal| {
+             // Resolve the external type declaration
+             const prepared = if (try self.resolveVarFromExternal(nominal.module_idx, nominal.target_node_idx)) |ext_ref|
+-                try self.prepareNominalTypeUsage(
++                try self.prepareNominalTypeUsageProjected(
+                     expr_var,
+                     ext_ref.local_var,
+                     expr_region,
+                     env,
++                    self.constructedTagNameForProjection(nominal.backing_expr),
+                 )
+             else prepared: {
+                 try self.markErroneous(expr_var);
+@@ -24062,6 +24071,19 @@
+     constructed_tags: []const Ident.Idx,
+     out: *std.ArrayList(Var),
+ ) Allocator.Error!void {
++    // TEMP-EXPERIMENT (ROC_EXP_SKIP_ABSENT_GROUND): a nominal target whose
++    // declaration has no formals has a ground backing; no payload var of an
++    // absent constructor can be an unresolved flex/rigid, so there is nothing
++    // to collect.
++    if (exhaustive.tempExperimentEnabled("ROC_EXP_SKIP_ABSENT_GROUND")) {
++        const resolved_target = self.types.resolveVar(target_var).desc.content;
++        if (resolved_target == .structure and resolved_target.structure == .nominal_type) {
++            if (self.types.lookupNominalDecl(resolved_target.structure.nominal_type)) |decl_idx| {
++                if (self.types.getNominalDecl(decl_idx).formals.count == 0) return;
++            }
++        }
++    }
++
+     var arena = std.heap.ArenaAllocator.init(self.gpa);
+     defer arena.deinit();
+ 
+@@ -27997,7 +28019,69 @@
+     nominal_var: Var,
+     backing_var: Var,
+ };
++
++/// TEMP-EXPERIMENT (ROC_EXP_PROJECT_OPEN): open a closed-tag-union backing
++/// for ONE constructor: instantiate only that tag's payload (the part the
++/// constructor relation mutates) and share every other tag's template payload
++/// vars read-only in the result union. Returns null when the shape does not
++/// apply so the caller falls back to the full opening.
++fn openNominalBackingForAppProjected(
++    self: *Self,
++    nominal_type: types_mod.NominalType,
++    env: *Env,
++    region: Region,
++    tag_name: Ident.Idx,
++) std.mem.Allocator.Error!?Var {
++    const decl_idx = self.types.lookupNominalDecl(nominal_type) orelse return null;
++    const decl = self.types.getNominalDecl(decl_idx);
++    if (!decl.isValid()) return null;
++    const backing_resolved = self.types.resolveVar(decl.backing);
++    if (backing_resolved.desc.content != .structure or backing_resolved.desc.content.structure != .tag_union) return null;
++    const template_union = backing_resolved.desc.content.structure.tag_union;
++    const ext_content = self.types.resolveVar(template_union.ext).desc.content;
++    if (ext_content != .structure or ext_content.structure != .empty_tag_union) return null;
+ 
++    const tags = self.types.getTagsSlice(template_union.tags);
++    var found: ?usize = null;
++    for (tags.items(.name), 0..) |name, i| {
++        if (name.eql(tag_name)) {
++            found = i;
++            break;
++        }
++    }
++    const found_idx = found orelse return null;
++
++    const formals = self.types.sliceVars(decl.formals);
++    const args = self.types.sliceNominalArgs(nominal_type);
++    std.debug.assert(formals.len == args.len);
++    self.rigid_var_substitutions.clearRetainingCapacity();
++    for (formals, args) |formal_var, arg_var| {
++        const formal_resolved = self.types.resolveVar(formal_var).desc.content;
++        if (formal_resolved != .rigid) continue;
++        try self.rigid_var_substitutions.put(self.gpa, formal_resolved.rigid.name, arg_var);
++    }
++
++    // Copy only the projected tag's payload vars.
++    const projected_args_range = tags.items(.args)[found_idx];
++    const vars_top = self.scratch_vars.top();
++    defer self.scratch_vars.clearFrom(vars_top);
++    for (self.types.sliceVars(projected_args_range)) |arg_var| {
++        try self.scratch_vars.append(try self.instantiateVarWithSubs(arg_var, &self.rigid_var_substitutions, env, .{ .explicit = region }));
++    }
++    const new_args_range = try self.types.appendVars(self.scratch_vars.sliceFromStart(vars_top));
++
++    // Re-read the tags after appending (the store may have relocated).
++    const tags_after = self.types.getTagsSlice(template_union.tags);
++    const tags_top = self.scratch_tags.top();
++    defer self.scratch_tags.clearFrom(tags_top);
++    for (tags_after.items(.name), tags_after.items(.args), 0..) |name, tag_args, i| {
++        try self.scratch_tags.append(.{ .name = name, .args = if (i == found_idx) new_args_range else tag_args });
++    }
++    const new_ext = try self.freshFromContent(.{ .structure = .empty_tag_union }, env, region);
++    const union_content = try self.types.mkTagUnion(self.scratch_tags.sliceFromStart(tags_top), new_ext);
++    return try self.freshFromContent(union_content, env, region);
++}
++
+ /// Instantiate and explicitly open a nominal application before checking its
+ /// backing syntax. Expression constructors use `backing_var` as structural
+ /// context for nested aggregates; patterns use the same prepared application
+@@ -28009,6 +28093,29 @@
+     region: Region,
+     env: *Env,
+ ) std.mem.Allocator.Error!?PreparedNominalTypeUsage {
++    return self.prepareNominalTypeUsageProjected(target_var, nominal_type_decl_var, region, env, null);
++}
++
++/// TEMP-EXPERIMENT (ROC_EXP_PROJECT_OPEN): the constructor's tag name, when the
++/// backing expression is a tag construction, selects a projected opening.
++fn constructedTagNameForProjection(self: *Self, backing_expr: CIR.Expr.Idx) ?Ident.Idx {
++    if (!exhaustive.tempExperimentEnabled("ROC_EXP_PROJECT_OPEN")) return null;
++    const expr = self.cir.store.getExpr(backing_expr);
++    return switch (expr) {
++        .e_tag => |tag| tag.name,
++        .e_zero_argument_tag => |tag| tag.name,
++        else => null,
++    };
++}
++
++fn prepareNominalTypeUsageProjected(
++    self: *Self,
++    target_var: Var,
++    nominal_type_decl_var: Var,
++    region: Region,
++    env: *Env,
++    projected_tag: ?Ident.Idx,
++) std.mem.Allocator.Error!?PreparedNominalTypeUsage {
+     const nominal_var = try self.instantiateVar(nominal_type_decl_var, env, .{ .explicit = region }, .none);
+     const nominal_resolved = self.types.resolveVar(nominal_var).desc.content;
+ 
+@@ -28033,7 +28140,11 @@
+         // substituted for the declaration's formals.
+         // E.g. ConList(a) := [Cons(a, ConstList), Nil]
+         //                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+-        const nominal_backing_var = (try self.openNominalBackingForApp(nominal_type, env, region)) orelse {
++        const projected_backing: ?Var = if (projected_tag) |tag_name|
++            try self.openNominalBackingForAppProjected(nominal_type, env, region, tag_name)
++        else
++            null;
++        const nominal_backing_var = projected_backing orelse (try self.openNominalBackingForApp(nominal_type, env, region)) orelse {
+             // The declaration is invalid (already reported) or unresolvable;
+             // poison this use silently.
+             try self.markErroneous(target_var);
+--- a/src/check/exhaustive.zig	2026-10-02 00:16:42
++++ b/src/check/exhaustive.zig	2026-10-02 01:32:37
+@@ -67,6 +67,12 @@
+     /// root for the rest of the entry point.
+     index: std.HashMapUnmanaged(u32, void, EntryContext, std.hash_map.default_max_load_percentage) = .empty,
+     allocator: std.mem.Allocator,
++    /// TEMP-EXPERIMENT (ROC_EXP_EXH_MEMO): memo of `isTypeInhabitedWithKnownEmpty`
++    /// results per resolved var for this entry point.
++    inhabited_memo: std.AutoHashMapUnmanaged(Var, InhabitedMemo) = .empty,
++
++    /// TEMP-EXPERIMENT (ROC_EXP_EXH_MEMO)
++    pub const InhabitedMemo = struct { known_len: u32, inhabited: bool };
+ 
+     const Entry = struct {
+         decl: types.NominalDecl.Idx,
+@@ -136,6 +142,7 @@
+ 
+     /// Free the cache's entry and argument lists and its index.
+     pub fn deinit(self: *NominalOpenCache) void {
++        self.inhabited_memo.deinit(self.allocator);
+         self.index.deinit(self.allocator);
+         self.entries.deinit(self.allocator);
+         self.args.deinit(self.allocator);
+@@ -990,6 +997,10 @@
+     const decl = type_store.getNominalDecl(decl_idx);
+     if (!decl.isValid()) return null;
+ 
++    // TEMP-EXPERIMENT (ROC_EXP_EXH_SHARE_GROUND): a declaration with no formals
++    // has a ground template; read-only analysis walks it directly.
++    if (tempExperimentEnabled("ROC_EXP_EXH_SHARE_GROUND") and decl.formals.count == 0) return decl.backing;
++
+     const args = type_store.sliceNominalArgs(nominal);
+     const cache = builtin_idents.open_cache;
+ 
+@@ -1265,6 +1276,10 @@
+     /// This makes non-regular recursive applications converge even when each
+     /// application has fresh type argument roots.
+     leave_nominal: types.NominalDecl.Idx,
++
++    /// TEMP-EXPERIMENT (ROC_EXP_EXH_MEMO): record the result on top of the
++    /// results stack as this var's inhabitedness.
++    record_memo: Var,
+ };
+ 
+ /// Check if a type is inhabited (has at least one possible value).
+@@ -1293,7 +1308,40 @@
+     return false;
+ }
+ 
++/// TEMP-EXPERIMENT: env-var gated experiment toggles (analysis only).
++pub fn tempExperimentEnabled(comptime name: [:0]const u8) bool {
++    const Memo = struct {
++        var value: ?bool = null;
++    };
++    if (Memo.value) |value| return value;
++    const value = @import("builtin").link_libc and std.c.getenv(name) != null;
++    Memo.value = value;
++    return value;
++}
++
+ fn isTypeInhabitedWithKnownEmpty(
++    type_store: *TypeStore,
++    builtin_idents: BuiltinIdents,
++    type_var: Var,
++    known_empty_vars: []const Var,
++) error{OutOfMemory}!bool {
++    // TEMP-EXPERIMENT (ROC_EXP_EXH_MEMO): memoize per resolved var within the
++    // entry point; the walkers never unify, so the result only depends on the
++    // known-empty list, whose length is part of the hit condition.
++    if (tempExperimentEnabled("ROC_EXP_EXH_MEMO")) {
++        const memo_var = type_store.resolveVar(type_var).var_;
++        const memo = &builtin_idents.open_cache.inhabited_memo;
++        if (memo.get(memo_var)) |hit| {
++            if (hit.known_len == known_empty_vars.len) return hit.inhabited;
++        }
++        const result = try isTypeInhabitedWithKnownEmptyUncached(type_store, builtin_idents, type_var, known_empty_vars);
++        try memo.put(builtin_idents.open_cache.allocator, memo_var, .{ .known_len = @intCast(known_empty_vars.len), .inhabited = result });
++        return result;
++    }
++    return isTypeInhabitedWithKnownEmptyUncached(type_store, builtin_idents, type_var, known_empty_vars);
++}
++
++fn isTypeInhabitedWithKnownEmptyUncached(
+     type_store: *TypeStore,
+     builtin_idents: BuiltinIdents,
+     type_var: Var,
+@@ -1332,6 +1380,18 @@
+                 if (varIsKnownEmpty(type_store, known_empty_vars, resolved_var)) {
+                     try results.append(gpa, false);
+                     continue;
++                }
++
++                // TEMP-EXPERIMENT (ROC_EXP_EXH_MEMO): reuse a result computed
++                // earlier in this entry point, and schedule recording this one.
++                if (tempExperimentEnabled("ROC_EXP_EXH_MEMO")) {
++                    if (builtin_idents.open_cache.inhabited_memo.get(resolved_var)) |hit| {
++                        if (hit.known_len == known_empty_vars.len) {
++                            try results.append(gpa, hit.inhabited);
++                            continue;
++                        }
++                    }
++                    if (!seen.contains(resolved_var)) try work_list.append(gpa, .{ .record_memo = resolved_var });
+                 }
+ 
+                 // Cycle detection: if we've seen this resolved variable before,
+@@ -1459,6 +1519,16 @@
+             .leave_nominal => |decl_idx| {
+                 const removed = active_nominals.remove(decl_idx);
+                 std.debug.assert(removed);
++            },
++
++            .record_memo => |memo_var| {
++                // TEMP-EXPERIMENT (ROC_EXP_EXH_MEMO)
++                if (results.items.len > 0) {
++                    try builtin_idents.open_cache.inhabited_memo.put(builtin_idents.open_cache.allocator, memo_var, .{
++                        .known_len = @intCast(known_empty_vars.len),
++                        .inhabited = results.items[results.items.len - 1],
++                    });
++                }
+             },
+         }
+     }
